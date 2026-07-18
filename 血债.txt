@@ -1,0 +1,1823 @@
+-- 杰森脚本中心 血债版 - 修复版
+-- 卡密：滚入
+
+local success, err = pcall(function()
+
+-- ================================ 基础服务 ================================
+local Services = {
+    Players = game:GetService("Players"),
+    RunService = game:GetService("RunService"),
+    ReplicatedStorage = game:GetService("ReplicatedStorage"),
+    TweenService = game:GetService("TweenService"),
+    HttpService = game:GetService("HttpService"),
+    CoreGui = game:GetService("CoreGui"),
+    StarterGui = game:GetService("StarterGui"),
+    UserInputService = game:GetService("UserInputService"),
+    Debris = game:GetService("Debris")
+}
+
+local LocalPlayer = Services.Players.LocalPlayer
+while not LocalPlayer do task.wait(0.1) LocalPlayer = Services.Players.LocalPlayer end
+
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 15)
+while not PlayerGui do task.wait(0.1) PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 15) end
+
+local Camera = workspace.CurrentCamera
+while not Camera do task.wait(0.1) Camera = workspace.CurrentCamera end
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function() Camera = workspace.CurrentCamera end)
+
+local RoundSystem
+pcall(function()
+    RoundSystem = Services.ReplicatedStorage:WaitForChild("RoundSystem", 8)
+    if not RoundSystem then RoundSystem = Services.ReplicatedStorage:FindFirstChild("GameSystem") end
+end)
+
+-- ================================ 武器库 ================================
+local KILLER_WEAPONS = {
+    "ZOZ-106","Gild Rosen-Obrez","SKORPION","Dual Micro KZis","ZZ-71",
+    "Party Cannon JTS225-Obrez","Gild K1911","ZT-33 (Golden)","Plastic JS-22","Fleet-K51",
+    "JAVELIN-OBREZS","K1911","Skeleton Rosen-Obrez","H&W-K7","Cute JS2-Derringy",
+    "'Memories'","TEKE-9","Jolibri","Steel Rosen-Obrez","410BONDS-Derringy",
+    "LUT-E 'PIP'","ZZ-90","Cr7s","Gild JTS225-Obrez","Gild Gisil-Pistole",
+    "Rosen-Obrez","Unioned PPm-41","PRIDE SKORPION","OTz-02","Kensington",
+    "JS-22","MAK-10","JSK-44","ZOZ-106SCOPED","1895-Rosev",
+    "K1911 Threaded","PPm-41","RUZKH-12","HWISSH-KP9","Lenitrovyak-23",
+    "Kamatov","JTS225-Obrez","JS1-Competitor","HEARDBALLA",
+    "Mandols-5","Bezzhumny","Door'bler","Mooser",
+    "JS2-Derringy","JS1-CYCLOPS","Blaze Sawn-off","'Memorial'","Whizz",
+    "Sawn-off","JS-22 Sealed","Steel Mares Leg","Pol357","'Desperation'",
+    "ChromeSlide Turquoise RR-LCP","Camo RR-LCPS","RR-LightCompactPistols","Daniqui-Obrez","WISP",
+    "JS","Mares Leg","Gisil-Pistole","RR-LightCompactPistol","Cute RR-LCPS",
+    "Sawed-THUMPA","Gild JS","ZT-33","FT100","J21a Meretta",
+    "AGM22","Gild Sawn-off","Bouquet","RR-MarkII","Steel 1895-Rosey",
+    "JS-2 Derringy","RR-LightCombatPistol","Hammer n Bullet",
+    "KR7S","HW-M5K","IZVEKH-BISEN","KRUS","APZ","Micro KZI","Z26M Stungun",
+    "Mikro KZI","Chromeslide","Mak-10","Lut-e Krus","Mersa-12","BuxxBerg590",
+    "Buxxberg-Compact","ZOZ-194","Zj23m","Merretta 486 Palubu","Thumpa",
+    "IZVEKH-ViteX","ANK74SU","A86M2L-SW","AK74M","AN-J91","BF AAL","SAG-Storm"
+}
+
+local SHERIFF_WEAPONS = {
+    "IZVEKH-412","Steel R&E Snubby","ZKZ-Obrez","Beagle-50","R&E Snubby",
+    "KriegsHerr-9","H&W-MPi5K","GG-17","'Paradise'","Beagle-44",
+    "SWAG-7","JS-5A-Obrez","J9a1 Meretta","Gild GG-17","Gild J9a1 M",
+    "Gild ZKZ-Obrez","Buxxberg-COMPACT","SHOT-7","Unioned ZKZ-Obrez",
+    "PRIDE H-226 SHIELD","Dual GG-17s","SAKURA ZKZ-Obrez","R&E M10",
+    "Dual Merettas","GG-26","HWISSH-226 SHIELD","ANKO46","Sawed-Auto180",
+    "Warlord-9","J9-Meretta","RR-Snubby","Beagle","HW-226","RR-40","Izvekh-Bisen",
+    "DRICO","Ry's GG-17"
+}
+
+local GIANT_WEAPONS_LIST = {
+    "Zimniy Voron","rvk","CIR95 20mm","THE BEAR's Plaything",
+    "LORD-12.7","GZHG-7.62","Vkaz's RVK"
+}
+
+local GIANT_NAMES = {
+    "Gennady Traktrinikov (tg)","Veronika Kazakova","Kai Zhang",
+    "Lyudmila Rozhechuk (bear)","Stanislav","Mlislav"
+}
+
+local GIANT_WEAPON_TO_NAME = {
+    ["Zimniy Voron"] = "Gennady Traktrinikov (tg)",
+    ["rvk"] = "Veronika Kazakova",
+    ["20mm"] = "Kai Zhang",
+    ["THE BEAR's Plaything"] = "Lyudmila Rozhechuk (bear)",
+    ["LORD-12.7"] = "Mlislav",
+    ["GZHG-7.62"] = "Stanislav",
+    ["Vkaz's RVK"] = "Vkaz"
+}
+
+local HIGH_THREAT_WEAPONS = {
+    "ZOZ-106","SKORPION","ZZ-71","MAK-10","JSK-44","KR7S","HW-M5K",
+    "IZVEKH-BISEN","KRUS","APZ","Micro KZI","Mikro KZI","KRIEGSHERR-9","H&W-MPi5K",
+    "SWAG-7","SHOT-7","Sawed-Auto180","Warlord-9","Mini Ranch Rifle",
+    "Patrol Rifle","IZVEKH-412","H&W-K7","HWISSH-KP9","HWISSH-226 SHIELD",
+    "Sawn-off","Blaze Sawn-off","Sawed-THUMPA","Bouquet","AGM22",
+    "Gild Sawn-off","Party Cannon JTS225-Obrez","JAVELIN-OBREZS","JTS225-Obrez",
+    "Gild JTS225-Obrez","Daniqui-Obrez","Beagle-50","Beagle-44","'Paradise'","HEAREBALLA",
+    "'Memorial'","TEKE-9","ZZ-90","ZT-33"
+}
+
+-- ================================ 配置项 ================================
+local Config = {
+    UpdateInterval = 0.3,
+    OnlyShowDanger = true,
+    WarnWhenKillerNear = true,
+    WarnDistance = 25,
+    HighlightDanger = false,
+    HighlightSheriff = false,
+    HighlightInnocent = false,
+    FilterDeadPlayer = true,
+    DebugMode = true,
+    Language = "Chinese",
+    GiantIdlePenaltyEnabled = true,
+    GiantIdleTimeLimit = 15,
+    AimbotEnabled = true,
+    AimbotSmoothness = 0.12,
+    AimbotStrength = 1.0,
+    AimbotTargetPart = "Head",
+    AimbotFOV = 120,
+    AimbotMaxDistance = 300,
+    AimbotWallCheck = false,
+    AimbotFilterRoles = {Killer = true, Sheriff = true, Giant = true, Innocent = true},
+    BulletIncreaserEnabled = true,
+    ExtraBulletsCount = 5,
+    ExtraBulletDamage = 10,
+    AutoPickupSheriffWeapon = true,
+    AutoPickupMode = "Teleport",
+    PickupCollisionSize = 1000,
+    NoRecoilEnabled = true,
+    GiantWarnDistance = 25,
+    RecoilLockDuration = 0.15,
+    APCProximityWarnDistance = 30,
+    APCProximityWarnCooldown = 5,
+    FOVCircleEnabled = false,
+    FOVCircleAngle = 60,
+    APCHighlightEnabled = true,
+    DamageDisplayEnabled = true,
+    Authenticated = false,
+    AmmoDisplayEnabled = true,
+    UiName = Services.HttpService:GenerateGUID(false):sub(1, 6),
+    UiSize = UDim2.new(0, 300, 0, 380),
+    UiPosition = UDim2.new(0.02, 0, 0.5, -160),
+    UiDisplayOrder = 999999,
+    RoleConfig = {
+        Killer = { Text = "杀手", EnText = "Killer", Color = Color3.fromRGB(225, 45, 45), IsDanger = true, Priority = 1 },
+        Giant = { Text = "巨人", EnText = "Giant", Color = Color3.fromRGB(225, 135, 35), IsDanger = true, Priority = 2 },
+        Sheriff = { Text = "警长", EnText = "Sheriff", Color = Color3.fromRGB(45, 115, 225), IsDanger = false, Priority = 3 },
+        Innocent = { Text = "平民", EnText = "Innocent", Color = Color3.fromRGB(85, 205, 105), IsDanger = false, Priority = 4 },
+        Spectator = { Text = "旁观者", EnText = "Spectator", Color = Color3.fromRGB(150, 150, 150), IsDanger = false, Priority = 5 }
+    }
+}
+
+-- ================================ 全局变量 ================================
+local ScreenGui, MainFrame, PlayerListContainer, SelfRoleLabel, RoundStatusLabel, StatLabel, EmptyTipLabel, DamageStatLabel
+local MainLoop, Connections = {}, {}
+local PlayerCardCache, PlayerWeaponCache, PlayerNativeRoleCache = {}, {}, {}
+local IsWarned, isMinimized = false, false
+local PlayerLastHealth = {}
+local HighlightedDroppedWeapons, SheriffDropZones = {}, {}
+
+local HeadTagCache = {}
+
+local GiantLastAttackTime = 0
+local GiantToolConnection = nil
+local GiantToolCurrent = nil
+local AimbotConnection = nil
+local RecoilConnection = nil
+local RecoilOriginCF = nil
+local RecoilLockUntil = 0
+local TotalDamageThisRound = 0
+local LastRoundPhase = "Waiting"
+
+local HighlightedAPCs = {}
+local APCAnnounced = false
+local LastAPCProximityWarn = 0
+
+local FovCircleGui, FovCircleFrame = nil, nil
+local AmmoDisplayFrame = nil
+
+-- ================================ 辅助函数 ================================
+local function CleanString(s)
+    return tostring(s):lower():gsub("[%s%p%'\"'']", "")
+end
+
+local function IsWeaponInList(toolName, weaponList)
+    local cleanTool = CleanString(toolName)
+    for _, weapon in pairs(weaponList) do
+        if cleanTool:find(CleanString(weapon), 1, true) then
+            return true
+        end
+    end
+    return false
+end
+
+local function IsAPCModel(model)
+    if not model or not model:IsA("Model") then return false end
+    return CleanString(model.Name):find("apc", 1, true) ~= nil
+end
+
+-- ================================ 原生职业识别 ================================
+local function GetPlayerNativeRole(player)
+    if not player then return "Innocent" end
+    local userId = player.UserId
+    local nativeRole = "Innocent"
+    pcall(function()
+        if RoundSystem then
+            local playerFolder = RoundSystem:FindFirstChild("Players")
+                or RoundSystem:FindFirstChild("PlayerData")
+                or RoundSystem:FindFirstChild("PlayerList")
+            if playerFolder then
+                local playerData = playerFolder:FindFirstChild(tostring(userId))
+                if playerData then
+                    local roleVal = playerData:GetAttribute("Role")
+                        or playerData:GetAttribute("TeamRole")
+                        or playerData:GetAttribute("Team")
+                    if roleVal then
+                        local roleStr = tostring(roleVal):lower()
+                        if roleStr:find("killer") or roleStr:find("murderer") then nativeRole = "Killer" end
+                        if roleStr:find("sheriff") or roleStr:find("vigilante") or roleStr:find("cop") then nativeRole = "Sheriff" end
+                        if roleStr:find("giant") or roleStr:find("juggernaut") then nativeRole = "Giant" end
+                        if roleStr:find("spectator") or roleStr:find("旁观") then nativeRole = "Spectator" end
+                    end
+                end
+            end
+        end
+    end)
+    return nativeRole
+end
+
+-- ================================ 武器扫描 ================================
+local function ScanAllWeapons(player)
+    local foundWeapons = {}
+    pcall(function()
+        if player.Character then
+            for _, tool in pairs(player.Character:GetDescendants()) do
+                if tool:IsA("Tool") then
+                    table.insert(foundWeapons, tool.Name)
+                end
+            end
+        end
+        local backpack = player:FindFirstChild("Backpack")
+        if backpack then
+            for _, tool in pairs(backpack:GetDescendants()) do
+                if tool:IsA("Tool") then
+                    table.insert(foundWeapons, tool.Name)
+                end
+            end
+        end
+    end)
+    return foundWeapons
+end
+
+-- ================================ 核心职业判定 ================================
+local function GetPlayerRoleAndWeapon(player)
+    if not player then return "Innocent", nil, nil end
+    local allWeapons = ScanAllWeapons(player)
+    local finalRole = "Innocent"
+    local foundWeapon = nil
+    local foundGiantWeapon = nil
+
+    for _, name in ipairs(allWeapons) do
+        if IsWeaponInList(name, GIANT_WEAPONS_LIST) then
+            foundGiantWeapon = name
+            finalRole = "Giant"
+            break
+        end
+    end
+
+    if finalRole == "Giant" then
+        return finalRole, foundGiantWeapon, GIANT_WEAPON_TO_NAME[foundGiantWeapon] or "Unknown Giant"
+    end
+
+    for _, name in ipairs(allWeapons) do
+        if IsWeaponInList(name, SHERIFF_WEAPONS) then
+            foundWeapon = name
+            finalRole = "Sheriff"
+            break
+        end
+    end
+
+    if finalRole == "Innocent" then
+        for _, name in ipairs(allWeapons) do
+            if IsWeaponInList(name, KILLER_WEAPONS) then
+                foundWeapon = name
+                finalRole = "Killer"
+                break
+            end
+        end
+    end
+
+    if finalRole == "Innocent" then
+        for _, giantName in ipairs(GIANT_NAMES) do
+            if CleanString(player.Name):find(CleanString(giantName), 1, true) then
+                finalRole = "Giant"
+                break
+            end
+        end
+    end
+
+    PlayerWeaponCache[player.UserId] = { Weapon = foundWeapon, ScanTime = os.clock() }
+    return finalRole, foundWeapon, nil
+end
+
+-- ================================ 伤害飘字与统计 ================================
+local DAMAGE_DISPLAY_DURATION = 1.2
+local function CreateDamageDisplay(parent, amount)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "DamageBillboard"
+    billboard.Size = UDim2.new(0, 100, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = 100
+    billboard.Parent = parent
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Text = "-" .. tostring(amount)
+    label.TextColor3 = Color3.fromRGB(255, 60, 60)
+    label.TextStrokeTransparency = 0
+    label.TextStrokeColor3 = Color3.new(0,0,0)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 24
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Parent = billboard
+    Services.TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 0.5, TextSize = 30}):Play()
+    task.delay(DAMAGE_DISPLAY_DURATION, function() pcall(function() billboard:Destroy() end) end)
+    if amount > 0 and amount < 500 then
+        TotalDamageThisRound = TotalDamageThisRound + amount
+    end
+end
+
+local function SetupDamageTracking(player)
+    local function connectHumanoid(char)
+        local humanoid = char:WaitForChild("Humanoid", 5)
+        if humanoid then
+            local initialHealth = humanoid.Health
+            if initialHealth < 1 then
+                repeat task.wait(0.1) until humanoid.Health > 1
+                initialHealth = humanoid.Health
+            end
+            PlayerLastHealth[player.UserId] = initialHealth
+            humanoid.HealthChanged:Connect(function(newHealth)
+                local oldHealth = PlayerLastHealth[player.UserId]
+                if oldHealth and newHealth < oldHealth then
+                    local damage = math.floor(oldHealth - newHealth)
+                    if damage > 0 and oldHealth > 0 then
+                        CreateDamageDisplay(char, damage)
+                    end
+                end
+                PlayerLastHealth[player.UserId] = newHealth
+            end)
+        end
+    end
+    if player.Character then connectHumanoid(player.Character) end
+    player.CharacterAdded:Connect(connectHumanoid)
+end
+for _, player in pairs(Services.Players:GetPlayers()) do
+    SetupDamageTracking(player)
+end
+Services.Players.PlayerAdded:Connect(SetupDamageTracking)
+
+-- ================================ 警长死亡武器处理 ================================
+local function TryPickupWeapon(tool)
+    if not tool or not tool:IsA("Tool") then return false end
+    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return false end
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    if backpack then tool.Parent = backpack; return true
+    else humanoid:EquipTool(tool); tool.Parent = LocalPlayer.Character; return true end
+end
+
+local function TryHighlightDroppedSheriffWeapon(player)
+    local role, _, _ = GetPlayerRoleAndWeapon(player)
+    if role ~= "Sheriff" then return end
+    local lastChar = player.Character
+    if not lastChar then return end
+    local lastWeapons = {}
+    for _, tool in ipairs(lastChar:GetChildren()) do
+        if tool:IsA("Tool") then table.insert(lastWeapons, tool.Name) end
+    end
+    task.wait(0.5)
+    for _, wName in ipairs(lastWeapons) do
+        if IsWeaponInList(wName, SHERIFF_WEAPONS) then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Tool") and obj.Name == wName and not obj.Parent:FindFirstChildOfClass("Humanoid") then
+                    if not HighlightedDroppedWeapons[obj] then
+                        HighlightedDroppedWeapons[obj] = true
+                        local bbg = Instance.new("BillboardGui")
+                        bbg.Name = "SheriffWeaponTag"
+                        bbg.Size = UDim2.new(0, 150, 0, 30)
+                        bbg.StudsOffset = Vector3.new(0, 2, 0)
+                        bbg.AlwaysOnTop = true
+                        bbg.Parent = obj
+                        local label = Instance.new("TextLabel")
+                        label.BackgroundTransparency = 1
+                        label.Text = "警长武器"
+                        label.TextColor3 = Config.RoleConfig.Sheriff.Color
+                        label.TextStrokeTransparency = 0
+                        label.Font = Enum.Font.GothamBold
+                        label.TextSize = 18
+                        label.Size = UDim2.new(1,0,1,0)
+                        label.Parent = bbg
+                        local hl = Instance.new("Highlight")
+                        hl.FillColor = Config.RoleConfig.Sheriff.Color
+                        hl.OutlineColor = Color3.fromRGB(255,215,0)
+                        hl.FillTransparency = 0.6
+                        hl.OutlineTransparency = 0.2
+                        hl.Parent = obj
+                        Services.StarterGui:SetCore("SendNotification", {
+                            Title = "警长武器掉落", Text = "警长的枪已掉落，守护好他", Duration = 5
+                        })
+                        local zone = Instance.new("Part")
+                        zone.Name = "SheriffSafeZone"
+                        zone.Transparency = 1
+                        zone.Anchored = true
+                        zone.CanCollide = false
+                        zone.Size = Vector3.new(30,30,30)
+                        zone.Shape = Enum.PartType.Ball
+                        zone.Position = obj.Position
+                        zone.Parent = workspace
+                        local lastWarnTime = 0
+                        local touchedConn = zone.Touched:Connect(function(hit)
+                            local char = hit.Parent
+                            if char and char:FindFirstChildOfClass("Humanoid") then
+                                local plr = Services.Players:GetPlayerFromCharacter(char)
+                                if plr and plr ~= LocalPlayer then
+                                    local now = os.clock()
+                                    if now - lastWarnTime > 5 then
+                                        lastWarnTime = now
+                                        Services.StarterGui:SetCore("SendNotification", {
+                                            Title = "⚠️ 安全警告", Text = "有人在靠近警长掉落枪械", Duration = 3
+                                        })
+                                    end
+                                end
+                            end
+                        end)
+                        local function cleanup()
+                            pcall(function() bbg:Destroy() end)
+                            pcall(function() hl:Destroy() end)
+                            pcall(function() zone:Destroy() end)
+                            pcall(function() touchedConn:Disconnect() end)
+                            HighlightedDroppedWeapons[obj] = nil
+                        end
+                        local parentConn = obj:GetPropertyChangedSignal("Parent"):Connect(function()
+                            if obj.Parent and obj.Parent:FindFirstChildOfClass("Humanoid") then
+                                cleanup(); pcall(function() parentConn:Disconnect() end)
+                            elseif not obj.Parent then
+                                cleanup(); pcall(function() parentConn:Disconnect() end)
+                            end
+                        end)
+                        if Config.AutoPickupSheriffWeapon and LocalPlayer.Character then
+                            task.wait(0.3)
+                            if obj and obj.Parent == workspace then TryPickupWeapon(obj) end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+Services.Players.PlayerRemoving:Connect(TryHighlightDroppedSheriffWeapon)
+Services.Players.PlayerAdded:Connect(function(player)
+    player.CharacterRemoving:Connect(function() TryHighlightDroppedSheriffWeapon(player) end)
+end)
+
+-- ================================ 玩家状态函数 ================================
+local function IsPlayerAlive(player)
+    if not player then return false end
+    local char = player.Character
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    return hum and hum.Health > 0
+end
+
+local function GetPlayerDistance(player)
+    if not player or not LocalPlayer then return 9999 end
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local targetRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot or not targetRoot then return 9999 end
+    return (myRoot.Position - targetRoot.Position).Magnitude
+end
+
+local function GetRoundStatus()
+    local status = { Phase = "Waiting", RemainingTime = 0, IsRoundActive = false }
+    pcall(function()
+        if RoundSystem then
+            local GameStatus = RoundSystem:FindFirstChild("GameStatus")
+            if GameStatus then
+                status.Phase = GameStatus:GetAttribute("Phase") or "Waiting"
+                status.RemainingTime = GameStatus:GetAttribute("RemainingTime") or 0
+                status.IsRoundActive = status.Phase == "InProgress"
+            end
+        end
+    end)
+    return status
+end
+
+-- ================================ 巨人挂机惩罚 ================================
+local function SetupGiantToolTracking()
+    if not Config.GiantIdlePenaltyEnabled then return end
+    if GiantToolConnection then GiantToolConnection:Disconnect(); GiantToolConnection = nil end
+    GiantToolCurrent = nil
+    if not LocalPlayer.Character then return end
+    local tool = LocalPlayer.Character:FindFirstChild("THE BEAR's Plaything")
+    if not tool or not tool:IsA("Tool") then return end
+    GiantToolCurrent = tool
+    GiantToolConnection = tool.Activated:Connect(function()
+        GiantLastAttackTime = os.clock()
+    end)
+    GiantLastAttackTime = os.clock()
+end
+
+local function UpdateGiantIdlePenalty()
+    if not Config.GiantIdlePenaltyEnabled then return end
+    local myRole = GetPlayerRoleAndWeapon(LocalPlayer)
+    if myRole ~= "Giant" then
+        if GiantToolConnection then GiantToolConnection:Disconnect(); GiantToolConnection = nil end
+        GiantLastAttackTime = 0
+        return
+    end
+    local currentTool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("THE BEAR's Plaything")
+    if (not currentTool and GiantToolConnection) or (currentTool and currentTool ~= GiantToolCurrent) then
+        SetupGiantToolTracking()
+    elseif not currentTool and not GiantToolConnection then
+        GiantLastAttackTime = 0
+        return
+    end
+    if GiantLastAttackTime == 0 then
+        GiantLastAttackTime = os.clock()
+    end
+    if GiantLastAttackTime > 0 and (os.clock() - GiantLastAttackTime) > Config.GiantIdleTimeLimit then
+        Services.StarterGui:SetCore("SendNotification", {
+            Title = "巨人罚则触发",
+            Text = "你已15秒未攻击，即将传送！",
+            Duration = 3
+        })
+        local char = LocalPlayer.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then hrp.CFrame = CFrame.new(0, 10000, 0)
+            else char:BreakJoints() end
+        end
+        GiantLastAttackTime = os.clock()
+        if GiantToolConnection then GiantToolConnection:Disconnect(); GiantToolConnection = nil end
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if GetPlayerRoleAndWeapon(LocalPlayer) == "Giant" then
+        SetupGiantToolTracking()
+    end
+end)
+
+-- ================================ 自动瞄准系统（含多选过滤） ================================
+local function GetBodyPart(char, partType)
+    if partType == "Head" then return char:FindFirstChild("Head")
+    elseif partType == "Torso" then return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+    elseif partType == "Legs" then return char:FindFirstChild("LeftLeg") or char:FindFirstChild("RightLeg") or char:FindFirstChild("HumanoidRootPart")
+    end
+    return char:FindFirstChild("HumanoidRootPart")
+end
+
+local function GetCurrentMaxRadius()
+    if not Camera then return 0 end
+    local angleUsed = Config.FOVCircleEnabled and Config.FOVCircleAngle or Config.AimbotFOV
+    local fovRad = math.rad(angleUsed / 2)
+    local camFovRad = math.rad(Camera.FieldOfView / 2)
+    return (Camera.ViewportSize.Y / 2) * math.tan(fovRad) / math.tan(camFovRad)
+end
+
+local function GetBestTarget()
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot or not Camera then return nil end
+    local maxRadius = GetCurrentMaxRadius()
+    if maxRadius <= 0 then return nil end
+
+    local bestTarget = nil
+    local bestScore = math.huge
+    for _, player in ipairs(Services.Players:GetPlayers()) do
+        if player ~= LocalPlayer and IsPlayerAlive(player) then
+            local char = player.Character
+            if char then
+                local role = GetPlayerRoleAndWeapon(player)
+                if Config.AimbotFilterRoles and not Config.AimbotFilterRoles[role] then continue end
+
+                local targetPart = GetBodyPart(char, Config.AimbotTargetPart)
+                if targetPart then
+                    local targetPos = targetPart.Position
+                    local dist = (myRoot.Position - targetPos).Magnitude
+                    if dist > Config.AimbotMaxDistance then continue end
+
+                    if not Config.AimbotWallCheck then
+                        local ray = Ray.new(myRoot.Position, (targetPos - myRoot.Position).Unit * dist)
+                        local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
+                        if hit then
+                            local hitModel = hit:FindFirstAncestorOfClass("Model")
+                            if hitModel ~= char then continue end
+                        end
+                    end
+
+                    local screenPoint, onScreen = Camera:WorldToScreenPoint(targetPos)
+                    if not onScreen then continue end
+                    local screenCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+                    local screenDist = (Vector2.new(screenPoint.X, screenPoint.Y) - screenCenter).Magnitude
+                    if screenDist > maxRadius then continue end
+                    if dist < bestScore then
+                        bestScore = dist
+                        bestTarget = targetPart
+                    end
+                end
+            end
+        end
+    end
+    return bestTarget
+end
+
+local function StartAimbot()
+    if AimbotConnection then return end
+    AimbotConnection = Services.RunService.RenderStepped:Connect(function()
+        if not Config.AimbotEnabled then return end
+        local targetPart = GetBestTarget()
+        if targetPart and Camera then
+            local camPos = Camera.CFrame.Position
+            local targetPos = targetPart.Position
+            local direction = (targetPos - camPos).Unit
+            local targetCF = CFrame.new(camPos, camPos + direction)
+            local alpha = math.min(1, Config.AimbotSmoothness * Config.AimbotStrength)
+            Camera.CFrame = Camera.CFrame:Lerp(targetCF, alpha)
+        end
+    end)
+end
+
+local function StopAimbot()
+    if AimbotConnection then AimbotConnection:Disconnect(); AimbotConnection = nil end
+end
+
+-- ================================ 无后坐力 ================================
+local function OnToolActivated()
+    RecoilOriginCF = Camera.CFrame
+    RecoilLockUntil = os.clock() + Config.RecoilLockDuration
+end
+
+local function StartRecoil()
+    if RecoilConnection then return end
+    RecoilConnection = Services.RunService.RenderStepped:Connect(function()
+        if not Config.NoRecoilEnabled then return end
+        if os.clock() < RecoilLockUntil then
+            Camera.CFrame = RecoilOriginCF
+        end
+    end)
+end
+
+local function StopRecoil()
+    if RecoilConnection then RecoilConnection:Disconnect(); RecoilConnection = nil end
+end
+
+-- ================================ 弹道增加系统 ================================
+local function GetToolDamage(tool)
+    if not tool then return Config.ExtraBulletDamage end
+    local attrDamage = tool:GetAttribute("Damage")
+    if attrDamage and type(attrDamage) == "number" then return attrDamage end
+    local damageVal = tool:FindFirstChild("Damage")
+    if damageVal then
+        if damageVal:IsA("NumberValue") or damageVal:IsA("IntValue") then
+            return damageVal.Value
+        end
+    end
+    return Config.ExtraBulletDamage
+end
+
+local function CreateBulletHole(position, normal)
+    local hole = Instance.new("Part")
+    hole.Name = "BulletHole"
+    hole.Size = Vector3.new(0.2, 0.2, 0.2)
+    hole.Shape = Enum.PartType.Ball
+    hole.Material = Enum.Material.SmoothPlastic
+    hole.Color = Color3.fromRGB(40, 40, 40)
+    hole.Anchored = true
+    hole.CanCollide = false
+    hole.Position = position + normal * 0.05
+    hole.Parent = workspace
+    task.delay(3, function() pcall(function() hole:Destroy() end) end)
+end
+
+local function IsRangedWeapon(tool)
+    if not tool then return false end
+    if IsWeaponInList(tool.Name, KILLER_WEAPONS) or IsWeaponInList(tool.Name, SHERIFF_WEAPONS) or IsWeaponInList(tool.Name, GIANT_WEAPONS_LIST) then return true end
+    local tooltip = tool:GetAttribute("ToolTip") or ""
+    if CleanString(tooltip):find("gun") or CleanString(tooltip):find("pistol") or CleanString(tooltip):find("rifle") or CleanString(tooltip):find("shotgun") then return true end
+    return false
+end
+
+local BulletActivateNotified = {}
+
+local function FireExtraBullets()
+    if not Config.BulletIncreaserEnabled or Config.ExtraBulletsCount <= 0 then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool or not IsRangedWeapon(tool) then return end
+
+    if not BulletActivateNotified[tool] then
+        BulletActivateNotified[tool] = true
+        Services.StarterGui:SetCore("SendNotification", { Title = "弹道增加", Text = "额外子弹数：" .. Config.ExtraBulletsCount, Duration = 3 })
+    end
+
+    local damage = GetToolDamage(tool)
+    local muzzlePos
+    local handle = tool:FindFirstChild("Handle")
+    if handle and handle:IsA("BasePart") then
+        muzzlePos = handle.Position
+    else
+        local head = char:FindFirstChild("Head")
+        muzzlePos = head and head.Position or Camera.CFrame.Position
+    end
+
+    for i = 1, Config.ExtraBulletsCount do
+        local direction = (Camera.CFrame.LookVector + Vector3.new(math.random(-50,50)/1000, math.random(-50,50)/1000, math.random(-50,50)/1000)).Unit
+        local ray = Ray.new(muzzlePos, direction * 500)
+        local hit, pos, normal = workspace:FindPartOnRayWithIgnoreList(ray, {char})
+        if hit then
+            CreateBulletHole(pos, normal)
+            local model = hit:FindFirstAncestorOfClass("Model")
+            if model then
+                local humanoid = model:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    local targetPlayer = Services.Players:GetPlayerFromCharacter(model)
+                    if targetPlayer and targetPlayer ~= LocalPlayer then
+                        humanoid:TakeDamage(damage)
+                        CreateDamageDisplay(model, damage)
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function SetupGlobalToolListener()
+    if not LocalPlayer.Character then return end
+    for _, tool in pairs(LocalPlayer.Character:GetChildren()) do
+        if tool:IsA("Tool") then
+            if not tool:GetAttribute("RecoilTracked") then
+                tool:SetAttribute("RecoilTracked", true)
+                local conn = tool.Activated:Connect(OnToolActivated)
+                table.insert(Connections, conn)
+            end
+            if not tool:GetAttribute("ExtraBulletTracked") then
+                tool:SetAttribute("ExtraBulletTracked", true)
+                local extraConn = tool.Activated:Connect(FireExtraBullets)
+                table.insert(Connections, extraConn)
+            end
+        end
+    end
+end
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    SetupGlobalToolListener()
+end)
+SetupGlobalToolListener()
+
+-- ================================ APC 高亮系统 ================================
+local function UpdateAPCHighlight()
+    if not Config.APCHighlightEnabled then
+        for _, hl in pairs(HighlightedAPCs) do pcall(function() hl:Destroy() end) end
+        table.clear(HighlightedAPCs)
+        APCAnnounced = false
+        LastAPCProximityWarn = 0
+        return
+    end
+
+    local isGiantSelf = (GetPlayerRoleAndWeapon(LocalPlayer) == "Giant")
+    if not isGiantSelf then
+        for _, hl in pairs(HighlightedAPCs) do pcall(function() hl:Destroy() end) end
+        table.clear(HighlightedAPCs)
+        APCAnnounced = false
+        LastAPCProximityWarn = 0
+        return
+    end
+
+    local currentHighlighted = {}
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if IsAPCModel(model) then
+            local existing = HighlightedAPCs[model]
+            if not existing then
+                local hl = Instance.new("Highlight")
+                hl.Name = "APCHighlight"
+                hl.OutlineColor = Color3.fromRGB(255, 105, 180)
+                hl.FillColor = Color3.fromRGB(255, 20, 147)
+                hl.OutlineTransparency = 0
+                hl.FillTransparency = 0.6
+                hl.Parent = model
+                HighlightedAPCs[model] = hl
+                if not APCAnnounced then
+                    APCAnnounced = true
+                    Services.StarterGui:SetCore("SendNotification", {
+                        Title = "我乃战神",
+                        Text = "张凯的装甲车已出现！",
+                        Duration = 5
+                    })
+                end
+            end
+            table.insert(currentHighlighted, model)
+
+            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot and model.PrimaryPart then
+                local dist = (myRoot.Position - model.PrimaryPart.Position).Magnitude
+                if dist < Config.APCProximityWarnDistance and os.clock() - LastAPCProximityWarn > Config.APCProximityWarnCooldown then
+                    LastAPCProximityWarn = os.clock()
+                    Services.StarterGui:SetCore("SendNotification", {
+                        Title = "⚠️ 装甲车靠近",
+                        Text = "张凯在你附近！",
+                        Duration = 3
+                    })
+                end
+            end
+        end
+    end
+
+    for model, hl in pairs(HighlightedAPCs) do
+        if not model.Parent then
+            pcall(function() hl:Destroy() end)
+            HighlightedAPCs[model] = nil
+        end
+    end
+
+    if #currentHighlighted == 0 and APCAnnounced then
+        APCAnnounced = false
+    end
+end
+
+-- ================================ FOV 圈 UI ================================
+local function UpdateFOVCircle()
+    if not FovCircleFrame or not Camera then return end
+    if Config.FOVCircleEnabled then
+        local radius = (Camera.ViewportSize.Y / 2) * math.tan(math.rad(Config.FOVCircleAngle / 2)) / math.tan(math.rad(Camera.FieldOfView / 2))
+        FovCircleFrame.Size = UDim2.new(0, radius * 2, 0, radius * 2)
+        FovCircleFrame.Position = UDim2.new(0.5, -radius, 0.5, -radius)
+        FovCircleFrame.Visible = true
+    else
+        FovCircleFrame.Visible = false
+    end
+end
+
+local function CreateFOVCircleUI()
+    if FovCircleGui then FovCircleGui:Destroy() end
+    FovCircleGui = Instance.new("ScreenGui")
+    FovCircleGui.Name = "FovCircleGui"
+    FovCircleGui.ResetOnSpawn = false
+    FovCircleGui.IgnoreGuiInset = true
+    FovCircleGui.DisplayOrder = Config.UiDisplayOrder - 1
+    pcall(function() FovCircleGui.Parent = Services.CoreGui end)
+    if not FovCircleGui.Parent then pcall(function() FovCircleGui.Parent = PlayerGui end) end
+
+    FovCircleFrame = Instance.new("Frame")
+    FovCircleFrame.Name = "FovCircle"
+    FovCircleFrame.Size = UDim2.new(0, 200, 0, 200)
+    FovCircleFrame.Position = UDim2.new(0.5, -100, 0.5, -100)
+    FovCircleFrame.BackgroundTransparency = 0.9
+    FovCircleFrame.BackgroundColor3 = Color3.new(1,1,1)
+    FovCircleFrame.BorderSizePixel = 0
+    FovCircleFrame.Visible = false
+    FovCircleFrame.Parent = FovCircleGui
+
+    local corner = Instance.new("UICorner", FovCircleFrame)
+    corner.CornerRadius = UDim.new(1, 0)
+    local stroke = Instance.new("UIStroke", FovCircleFrame)
+    stroke.Color = Color3.fromRGB(0, 255, 0)
+    stroke.Thickness = 2
+    stroke.Transparency = 0.5
+end
+
+-- ================================ 秒做任务 ================================
+local function InstantCompleteTasks()
+    local userId = LocalPlayer.UserId
+    local found = false
+    pcall(function()
+        if RoundSystem then
+            local playersFolder = RoundSystem:FindFirstChild("Players") or RoundSystem:FindFirstChild("PlayerData")
+            if playersFolder then
+                local myData = playersFolder:FindFirstChild(tostring(userId))
+                if myData then
+                    local tasksFolder = myData:FindFirstChild("Tasks") or myData:FindFirstChild("Quests")
+                    if tasksFolder then
+                        for _, task in pairs(tasksFolder:GetChildren()) do
+                            if task:IsA("Folder") or task:IsA("Configuration") then
+                                local progress = task:FindFirstChild("Progress") or task:FindFirstChild("Current")
+                                if progress and (progress:IsA("NumberValue") or progress:IsA("IntValue")) then
+                                    local target = task:FindFirstChild("Goal") or task:FindFirstChild("Target") or task:FindFirstChild("Max")
+                                    if target and (target:IsA("NumberValue") or target:IsA("IntValue")) then
+                                        progress.Value = target.Value
+                                    else progress.Value = 0 end
+                                    found = true
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+    if found then
+        Services.StarterGui:SetCore("SendNotification", { Title = "秒做任务", Text = "任务进度已瞬间完成！", Duration = 3 })
+    else
+        Services.StarterGui:SetCore("SendNotification", { Title = "秒做任务", Text = "未找到任务进度数据", Duration = 3 })
+    end
+end
+
+-- ================================ 卡密验证 ================================
+local function WaitForPasscode()
+    local passGui = Instance.new("ScreenGui")
+    passGui.Name = "PasscodeGui"
+    passGui.ResetOnSpawn = false
+    passGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    passGui.DisplayOrder = 2147483647
+    pcall(function() passGui.Parent = Services.CoreGui end)
+    if not passGui.Parent then pcall(function() passGui.Parent = PlayerGui end) end
+
+    local overlay = Instance.new("Frame")
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.BackgroundColor3 = Color3.new(0, 0, 0)
+    overlay.BackgroundTransparency = 0.3
+    overlay.BorderSizePixel = 0
+    overlay.Active = true
+    overlay.ZIndex = 10
+    overlay.Parent = passGui
+
+    local panel = Instance.new("Frame")
+    panel.Size = UDim2.new(0, 320, 0, 220)
+    panel.Position = UDim2.new(0.5, -160, 0.4, -110)
+    panel.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    panel.BorderSizePixel = 0
+    panel.ZIndex = 11
+    Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 10)
+    panel.Parent = passGui
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Position = UDim2.new(0, 0, 0, 10)
+    title.BackgroundTransparency = 1
+    title.Text = "🔑 杰森脚本验证"
+    title.TextColor3 = Color3.fromRGB(255, 200, 50)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 20
+    title.ZIndex = 11
+    title.Parent = panel
+
+    local inputBox = Instance.new("TextBox")
+    inputBox.Size = UDim2.new(0, 240, 0, 36)
+    inputBox.Position = UDim2.new(0.5, -120, 0, 60)
+    inputBox.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    inputBox.TextColor3 = Color3.new(1, 1, 1)
+    inputBox.PlaceholderText = "请输入卡密"
+    inputBox.Font = Enum.Font.Gotham
+    inputBox.TextSize = 16
+    inputBox.ZIndex = 11
+    Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0, 6)
+    inputBox.Parent = panel
+
+    local confirmBtn = Instance.new("TextButton")
+    confirmBtn.Size = UDim2.new(0, 240, 0, 36)
+    confirmBtn.Position = UDim2.new(0.5, -120, 0, 110)
+    confirmBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+    confirmBtn.Text = "验 证"
+    confirmBtn.TextColor3 = Color3.new(1, 1, 1)
+    confirmBtn.Font = Enum.Font.GothamBold
+    confirmBtn.TextSize = 16
+    confirmBtn.ZIndex = 11
+    Instance.new("UICorner", confirmBtn).CornerRadius = UDim.new(0, 6)
+    confirmBtn.Parent = panel
+
+    local errorLabel = Instance.new("TextLabel")
+    errorLabel.Size = UDim2.new(1, 0, 0, 20)
+    errorLabel.Position = UDim2.new(0, 0, 0, 155)
+    errorLabel.BackgroundTransparency = 1
+    errorLabel.Text = ""
+    errorLabel.TextColor3 = Color3.fromRGB(255, 60, 60)
+    errorLabel.TextSize = 13
+    errorLabel.Font = Enum.Font.Gotham
+    errorLabel.ZIndex = 11
+    errorLabel.Parent = panel
+
+    local done = false
+
+    local function tryVerify()
+        if inputBox.Text == "滚入" then
+            done = true
+        else
+            errorLabel.Text = "❌ 卡密错误，请重试"
+            inputBox.Text = ""
+            task.delay(2, function()
+                pcall(function() errorLabel.Text = "" end)
+            end)
+        end
+    end
+
+    confirmBtn.MouseButton1Click:Connect(tryVerify)
+    inputBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            tryVerify()
+        end
+    end)
+
+    task.wait(0.1)
+    pcall(function() inputBox:CaptureFocus() end)
+
+    repeat
+        task.wait(0.1)
+    until done
+
+    pcall(function() passGui:Destroy() end)
+    Config.Authenticated = true
+    StartAimbot()
+    StartRecoil()
+end
+
+-- ================================ 原生UI创建 ================================
+local function CreateMainUI()
+    print("【杰森脚本中心】创建增强UI")
+    ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = Config.UiName
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.DisplayOrder = Config.UiDisplayOrder
+    ScreenGui.Enabled = true
+    ScreenGui.AutoLocalize = false
+
+    pcall(function() ScreenGui.Parent = Services.CoreGui end)
+    if not ScreenGui.Parent then pcall(function() ScreenGui.Parent = PlayerGui end) end
+    if not ScreenGui.Parent then error("UI挂载失败") return end
+
+    MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = Config.UiSize
+    MainFrame.Position = Config.UiPosition
+    MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    MainFrame.BackgroundTransparency = 0.05
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    MainFrame.ClipsDescendants = true
+    MainFrame.ZIndex = 10
+    MainFrame.Visible = false
+
+    local MainCorner = Instance.new("UICorner")
+    MainCorner.CornerRadius = UDim.new(0, 10)
+    MainCorner.Parent = MainFrame
+
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Size = UDim2.new(1, 0, 0, 45)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    TitleBar.BorderSizePixel = 0
+    TitleBar.Parent = MainFrame
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, -80, 1, 0)
+    TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = "杰森脚本中心 血债版"
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+    TitleLabel.TextSize = 16
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.Parent = TitleBar
+
+    local MinimizeBtn = Instance.new("TextButton")
+    MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+    MinimizeBtn.Position = UDim2.new(1, -70, 0.5, -15)
+    MinimizeBtn.Text = "—"
+    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
+    MinimizeBtn.TextColor3 = Color3.new(1,1,1)
+    MinimizeBtn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 6)
+    MinimizeBtn.Parent = TitleBar
+
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CloseBtn.Position = UDim2.new(1, -35, 0.5, -15)
+    CloseBtn.Text = "✕"
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    CloseBtn.TextColor3 = Color3.new(1,1,1)
+    CloseBtn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+    CloseBtn.Parent = TitleBar
+
+    local ContentScroller = Instance.new("ScrollingFrame")
+    ContentScroller.Size = UDim2.new(1, 0, 1, -45)
+    ContentScroller.Position = UDim2.new(0, 0, 0, 45)
+    ContentScroller.BackgroundTransparency = 1
+    ContentScroller.BorderSizePixel = 0
+    ContentScroller.ScrollBarThickness = 4
+    ContentScroller.ScrollBarImageColor3 = Color3.fromRGB(80,80,100)
+    ContentScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
+    ContentScroller.Parent = MainFrame
+
+    local ContentList = Instance.new("UIListLayout")
+    ContentList.Parent = ContentScroller
+    ContentList.SortOrder = Enum.SortOrder.LayoutOrder
+    ContentList.Padding = UDim.new(0, 6)
+
+    local StatusFrame = Instance.new("Frame")
+    StatusFrame.Size = UDim2.new(1, -10, 0, 40)
+    StatusFrame.BackgroundTransparency = 1
+    StatusFrame.Parent = ContentScroller
+
+    RoundStatusLabel = Instance.new("TextLabel")
+    RoundStatusLabel.Size = UDim2.new(1, 0, 0, 18)
+    RoundStatusLabel.BackgroundTransparency = 1
+    RoundStatusLabel.Text = "回合状态: 等待中"
+    RoundStatusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    RoundStatusLabel.TextSize = 11
+    RoundStatusLabel.Font = Enum.Font.Gotham
+    RoundStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    RoundStatusLabel.Parent = StatusFrame
+
+    SelfRoleLabel = Instance.new("TextLabel")
+    SelfRoleLabel.Size = UDim2.new(1, 0, 0, 18)
+    SelfRoleLabel.Position = UDim2.new(0, 0, 1, -18)
+    SelfRoleLabel.BackgroundTransparency = 1
+    SelfRoleLabel.Text = "我的职业: 加载中..."
+    SelfRoleLabel.TextColor3 = Color3.new(1,1,1)
+    SelfRoleLabel.TextSize = 11
+    SelfRoleLabel.Font = Enum.Font.GothamBold
+    SelfRoleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SelfRoleLabel.Parent = StatusFrame
+
+    local function CreateFoldSection(title, buttonsData, defaultOpen)
+        local Section = Instance.new("Frame")
+        Section.Size = UDim2.new(1, 0, 0, 30)
+        Section.BackgroundTransparency = 1
+        Section.Parent = ContentScroller
+        local Header = Instance.new("TextButton")
+        Header.Size = UDim2.new(1, 0, 0, 30)
+        Header.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+        Header.Text = "  " .. title
+        Header.TextColor3 = Color3.new(1,1,1)
+        Header.TextSize = 13
+        Header.Font = Enum.Font.GothamBold
+        Header.TextXAlignment = Enum.TextXAlignment.Left
+        Header.AutoButtonColor = false
+        Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 6)
+        Header.Parent = Section
+        local Content = Instance.new("Frame")
+        Content.Size = UDim2.new(1, 0, 0, 0)
+        Content.Position = UDim2.new(0, 0, 0, 32)
+        Content.BackgroundTransparency = 1
+        Content.ClipsDescendants = true
+        Content.Visible = defaultOpen or false
+        Content.Parent = Section
+        local ContentList2 = Instance.new("UIListLayout")
+        ContentList2.Parent = Content
+        ContentList2.SortOrder = Enum.SortOrder.LayoutOrder
+        ContentList2.Padding = UDim.new(0, 4)
+        local contentHeight = 0
+        for _, btnData in ipairs(buttonsData) do
+            local Btn = Instance.new("TextButton")
+            Btn.Size = UDim2.new(1, 0, 0, 28)
+            Btn.BackgroundColor3 = btnData.active and Color3.fromRGB(20,130,70) or Color3.fromRGB(60,60,80)
+            Btn.Text = btnData.text
+            Btn.TextColor3 = Color3.new(1,1,1)
+            Btn.TextSize = 11
+            Btn.Font = Enum.Font.Gotham
+            Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 5)
+            Btn.Parent = Content
+            if btnData.callback then Btn.MouseButton1Click:Connect(function() btnData.callback(Btn) end) end
+            contentHeight += 32
+        end
+        Content.Size = UDim2.new(1, 0, 0, contentHeight)
+        Section.Size = UDim2.new(1, 0, 0, 30 + (defaultOpen and contentHeight or 0))
+        local isOpen = defaultOpen or false
+        Header.MouseButton1Click:Connect(function()
+            isOpen = not isOpen
+            Content.Visible = isOpen
+            Section.Size = UDim2.new(1, 0, 0, isOpen and (30 + contentHeight) or 30)
+            task.wait(0.1)
+            ContentScroller.CanvasSize = UDim2.new(0,0,0, ContentList.AbsoluteContentSize.Y)
+        end)
+        return Section
+    end
+
+    CreateFoldSection("🔍 神探选项", {
+        { text = Config.OnlyShowDanger and "仅危险目标 : 开" or "仅危险目标 : 关", active = Config.OnlyShowDanger, callback = function(btn)
+            Config.OnlyShowDanger = not Config.OnlyShowDanger
+            btn.Text = Config.OnlyShowDanger and "仅危险目标 : 开" or "仅危险目标 : 关"
+            btn.BackgroundColor3 = Config.OnlyShowDanger and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+            table.clear(PlayerCardCache)
+            for _, child in pairs(PlayerListContainer:GetChildren()) do
+                if child:IsA("Frame") and child.Name:find("Card_") then child:Destroy() end
+            end
+        end},
+        { text = Config.WarnWhenKillerNear and "杀手警告   : 开" or "杀手警告   : 关", active = Config.WarnWhenKillerNear, callback = function(btn)
+            Config.WarnWhenKillerNear = not Config.WarnWhenKillerNear
+            btn.Text = Config.WarnWhenKillerNear and "杀手警告   : 开" or "杀手警告   : 关"
+            btn.BackgroundColor3 = Config.WarnWhenKillerNear and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.HighlightDanger and "危险高亮   : 开" or "危险高亮   : 关", active = Config.HighlightDanger, callback = function(btn)
+            Config.HighlightDanger = not Config.HighlightDanger
+            btn.Text = Config.HighlightDanger and "危险高亮   : 开" or "危险高亮   : 关"
+            btn.BackgroundColor3 = Config.HighlightDanger and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.HighlightSheriff and "安全高亮   : 开" or "安全高亮   : 关", active = Config.HighlightSheriff, callback = function(btn)
+            Config.HighlightSheriff = not Config.HighlightSheriff
+            btn.Text = Config.HighlightSheriff and "安全高亮   : 开" or "安全高亮   : 关"
+            btn.BackgroundColor3 = Config.HighlightSheriff and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.HighlightInnocent and "平民高亮   : 开" or "平民高亮   : 关", active = Config.HighlightInnocent, callback = function(btn)
+            Config.HighlightInnocent = not Config.HighlightInnocent
+            btn.Text = Config.HighlightInnocent and "平民高亮   : 开" or "平民高亮   : 关"
+            btn.BackgroundColor3 = Config.HighlightInnocent and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = "⟳ 刷新列表", active = false, callback = function()
+            table.clear(PlayerWeaponCache)
+            table.clear(PlayerCardCache)
+            Services.StarterGui:SetCore("SendNotification", { Title = "刷新完成", Text = "已重新扫描全场玩家职业与武器", Duration = 2 })
+        end}
+    }, true)
+
+    CreateFoldSection("🎯 自动瞄准", {
+        { text = Config.AimbotEnabled and "自动瞄准   : 开" or "自动瞄准   : 关", active = Config.AimbotEnabled, callback = function(btn)
+            Config.AimbotEnabled = not Config.AimbotEnabled
+            btn.Text = Config.AimbotEnabled and "自动瞄准   : 开" or "自动瞄准   : 关"
+            btn.BackgroundColor3 = Config.AimbotEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+            if not Config.AimbotEnabled then StopAimbot() else StartAimbot() end
+        end},
+        { text = "平滑度 " .. string.format("%.2f", Config.AimbotSmoothness) .. " [+]", active = false, callback = function(btn)
+            Config.AimbotSmoothness = math.min(1, Config.AimbotSmoothness + 0.02)
+            btn.Text = "平滑度 " .. string.format("%.2f", Config.AimbotSmoothness) .. " [+]"
+        end},
+        { text = "平滑度 " .. string.format("%.2f", Config.AimbotSmoothness) .. " [-]", active = false, callback = function(btn)
+            Config.AimbotSmoothness = math.max(0.01, Config.AimbotSmoothness - 0.02)
+            btn.Text = "平滑度 " .. string.format("%.2f", Config.AimbotSmoothness) .. " [-]"
+        end},
+        { text = "强度     " .. string.format("%.1f", Config.AimbotStrength) .. " [+]", active = false, callback = function(btn)
+            Config.AimbotStrength = math.min(5, Config.AimbotStrength + 0.1)
+            btn.Text = "强度     " .. string.format("%.1f", Config.AimbotStrength) .. " [+]"
+        end},
+        { text = "强度     " .. string.format("%.1f", Config.AimbotStrength) .. " [-]", active = false, callback = function(btn)
+            Config.AimbotStrength = math.max(0.1, Config.AimbotStrength - 0.1)
+            btn.Text = "强度     " .. string.format("%.1f", Config.AimbotStrength) .. " [-]"
+        end},
+        { text = "锁部位: " .. Config.AimbotTargetPart, active = false, callback = function(btn)
+            if Config.AimbotTargetPart == "Head" then Config.AimbotTargetPart = "Torso"
+            elseif Config.AimbotTargetPart == "Torso" then Config.AimbotTargetPart = "Legs"
+            else Config.AimbotTargetPart = "Head" end
+            btn.Text = "锁部位: " .. Config.AimbotTargetPart
+        end},
+        { text = Config.AimbotWallCheck and "穿墙瞄准   : 开" or "穿墙瞄准   : 关", active = Config.AimbotWallCheck, callback = function(btn)
+            Config.AimbotWallCheck = not Config.AimbotWallCheck
+            btn.Text = Config.AimbotWallCheck and "穿墙瞄准   : 开" or "穿墙瞄准   : 关"
+            btn.BackgroundColor3 = Config.AimbotWallCheck and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.NoRecoilEnabled and "无后坐力   : 开" or "无后坐力   : 关", active = Config.NoRecoilEnabled, callback = function(btn)
+            Config.NoRecoilEnabled = not Config.NoRecoilEnabled
+            btn.Text = Config.NoRecoilEnabled and "无后坐力   : 开" or "无后坐力   : 关"
+            btn.BackgroundColor3 = Config.NoRecoilEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+            if not Config.NoRecoilEnabled then StopRecoil() else StartRecoil() end
+        end},
+        { text = Config.FOVCircleEnabled and "FOV瞄准圈 : 开" or "FOV瞄准圈 : 关", active = Config.FOVCircleEnabled, callback = function(btn)
+            Config.FOVCircleEnabled = not Config.FOVCircleEnabled
+            btn.Text = Config.FOVCircleEnabled and "FOV瞄准圈 : 开" or "FOV瞄准圈 : 关"
+            btn.BackgroundColor3 = Config.FOVCircleEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+            UpdateFOVCircle()
+        end},
+    }, true)
+
+    CreateFoldSection("🎯 自瞄过滤（多选）", {
+        { text = Config.AimbotFilterRoles.Killer and "✅ 杀手" or "❌ 杀手", active = Config.AimbotFilterRoles.Killer, callback = function(btn)
+            Config.AimbotFilterRoles.Killer = not Config.AimbotFilterRoles.Killer
+            btn.Text = Config.AimbotFilterRoles.Killer and "✅ 杀手" or "❌ 杀手"
+            btn.BackgroundColor3 = Config.AimbotFilterRoles.Killer and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.AimbotFilterRoles.Sheriff and "✅ 警长" or "❌ 警长", active = Config.AimbotFilterRoles.Sheriff, callback = function(btn)
+            Config.AimbotFilterRoles.Sheriff = not Config.AimbotFilterRoles.Sheriff
+            btn.Text = Config.AimbotFilterRoles.Sheriff and "✅ 警长" or "❌ 警长"
+            btn.BackgroundColor3 = Config.AimbotFilterRoles.Sheriff and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.AimbotFilterRoles.Giant and "✅ 巨人" or "❌ 巨人", active = Config.AimbotFilterRoles.Giant, callback = function(btn)
+            Config.AimbotFilterRoles.Giant = not Config.AimbotFilterRoles.Giant
+            btn.Text = Config.AimbotFilterRoles.Giant and "✅ 巨人" or "❌ 巨人"
+            btn.BackgroundColor3 = Config.AimbotFilterRoles.Giant and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.AimbotFilterRoles.Innocent and "✅ 平民" or "❌ 平民", active = Config.AimbotFilterRoles.Innocent, callback = function(btn)
+            Config.AimbotFilterRoles.Innocent = not Config.AimbotFilterRoles.Innocent
+            btn.Text = Config.AimbotFilterRoles.Innocent and "✅ 平民" or "❌ 平民"
+            btn.BackgroundColor3 = Config.AimbotFilterRoles.Innocent and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+    }, true)
+
+    CreateFoldSection("🚀 弹道增加", {
+        { text = Config.BulletIncreaserEnabled and "弹道增加   : 开" or "弹道增加   : 关", active = Config.BulletIncreaserEnabled, callback = function(btn)
+            Config.BulletIncreaserEnabled = not Config.BulletIncreaserEnabled
+            btn.Text = Config.BulletIncreaserEnabled and "弹道增加   : 开" or "弹道增加   : 关"
+            btn.BackgroundColor3 = Config.BulletIncreaserEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = "额外子弹数 " .. Config.ExtraBulletsCount .. " [+1]", active = false, callback = function(btn)
+            Config.ExtraBulletsCount = math.min(90, Config.ExtraBulletsCount + 1)
+            btn.Text = "额外子弹数 " .. Config.ExtraBulletsCount .. " [+1]"
+        end},
+        { text = "额外子弹数 " .. Config.ExtraBulletsCount .. " [-1]", active = false, callback = function(btn)
+            Config.ExtraBulletsCount = math.max(0, Config.ExtraBulletsCount - 1)
+            btn.Text = "额外子弹数 " .. Config.ExtraBulletsCount .. " [-1]"
+        end}
+    }, true)
+
+    CreateFoldSection("⚙️ 其他选项", {
+        { text = Config.GiantIdlePenaltyEnabled and "巨人罚则   : 开" or "巨人罚则   : 关", active = Config.GiantIdlePenaltyEnabled, callback = function(btn)
+            Config.GiantIdlePenaltyEnabled = not Config.GiantIdlePenaltyEnabled
+            btn.Text = Config.GiantIdlePenaltyEnabled and "巨人罚则   : 开" or "巨人罚则   : 关"
+            btn.BackgroundColor3 = Config.GiantIdlePenaltyEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.AutoPickupSheriffWeapon and "自动捡枪   : 开" or "自动捡枪   : 关", active = Config.AutoPickupSheriffWeapon, callback = function(btn)
+            Config.AutoPickupSheriffWeapon = not Config.AutoPickupSheriffWeapon
+            btn.Text = Config.AutoPickupSheriffWeapon and "自动捡枪   : 开" or "自动捡枪   : 关"
+            btn.BackgroundColor3 = Config.AutoPickupSheriffWeapon and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.APCHighlightEnabled and "APC装甲    : 开" or "APC装甲    : 关", active = Config.APCHighlightEnabled, callback = function(btn)
+            Config.APCHighlightEnabled = not Config.APCHighlightEnabled
+            btn.Text = Config.APCHighlightEnabled and "APC装甲    : 开" or "APC装甲    : 关"
+            btn.BackgroundColor3 = Config.APCHighlightEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end}
+    }, false)
+
+    local DamageToggleFrame = Instance.new("Frame")
+    DamageToggleFrame.Size = UDim2.new(1, -10, 0, 30)
+    DamageToggleFrame.BackgroundTransparency = 1
+    DamageToggleFrame.Parent = ContentScroller
+    local DamageToggleBtn = Instance.new("TextButton")
+    DamageToggleBtn.Size = UDim2.new(1, 0, 0, 30)
+    DamageToggleBtn.BackgroundColor3 = Config.DamageDisplayEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+    DamageToggleBtn.Text = Config.DamageDisplayEnabled and "伤害飘字   : 开" or "伤害飘字   : 关"
+    DamageToggleBtn.TextColor3 = Color3.new(1,1,1)
+    DamageToggleBtn.TextSize = 13
+    DamageToggleBtn.Font = Enum.Font.GothamBold
+    DamageToggleBtn.Parent = DamageToggleFrame
+    Instance.new("UICorner", DamageToggleBtn).CornerRadius = UDim.new(0, 6)
+    DamageToggleBtn.MouseButton1Click:Connect(function()
+        Config.DamageDisplayEnabled = not Config.DamageDisplayEnabled
+        DamageToggleBtn.Text = Config.DamageDisplayEnabled and "伤害飘字   : 开" or "伤害飘字   : 关"
+        DamageToggleBtn.BackgroundColor3 = Config.DamageDisplayEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+    end)
+
+    local TaskFrame = Instance.new("Frame")
+    TaskFrame.Size = UDim2.new(1, -10, 0, 30)
+    TaskFrame.BackgroundTransparency = 1
+    TaskFrame.Parent = ContentScroller
+    local TaskBtn = Instance.new("TextButton")
+    TaskBtn.Size = UDim2.new(1, 0, 0, 30)
+    TaskBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    TaskBtn.Text = "秒做任务 ⚡"
+    TaskBtn.TextColor3 = Color3.new(1,1,1)
+    TaskBtn.TextSize = 13
+    TaskBtn.Font = Enum.Font.GothamBold
+    TaskBtn.Parent = TaskFrame
+    Instance.new("UICorner", TaskBtn).CornerRadius = UDim.new(0, 6)
+    TaskBtn.MouseButton1Click:Connect(InstantCompleteTasks)
+
+    local ListTitle = Instance.new("TextLabel")
+    ListTitle.Size = UDim2.new(1, -10, 0, 20)
+    ListTitle.BackgroundTransparency = 1
+    ListTitle.Text = "📋 玩家列表 (含距离)"
+    ListTitle.TextColor3 = Color3.fromRGB(180, 180, 200)
+    ListTitle.TextSize = 11
+    ListTitle.Font = Enum.Font.GothamBold
+    ListTitle.TextXAlignment = Enum.TextXAlignment.Left
+    ListTitle.Parent = ContentScroller
+
+    PlayerListContainer = Instance.new("ScrollingFrame")
+    PlayerListContainer.Size = UDim2.new(1, -10, 0, 150)
+    PlayerListContainer.BackgroundTransparency = 1
+    PlayerListContainer.BorderSizePixel = 0
+    PlayerListContainer.ScrollBarThickness = 4
+    PlayerListContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    PlayerListContainer.Parent = ContentScroller
+
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.Parent = PlayerListContainer
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ListLayout.Padding = UDim.new(0, 5)
+
+    EmptyTipLabel = Instance.new("TextLabel")
+    EmptyTipLabel.Size = UDim2.new(1, 0, 0, 30)
+    EmptyTipLabel.BackgroundTransparency = 1
+    EmptyTipLabel.Text = "暂无危险目标\n当前安全"
+    EmptyTipLabel.TextColor3 = Color3.fromRGB(120,120,140)
+    EmptyTipLabel.TextSize = 12
+    EmptyTipLabel.Font = Enum.Font.Gotham
+    EmptyTipLabel.TextWrapped = true
+    EmptyTipLabel.Visible = false
+    EmptyTipLabel.Parent = PlayerListContainer
+
+    local InfoFrame = Instance.new("Frame")
+    InfoFrame.Size = UDim2.new(1, -10, 0, 42)
+    InfoFrame.BackgroundTransparency = 1
+    InfoFrame.Parent = ContentScroller
+
+    StatLabel = Instance.new("TextLabel")
+    StatLabel.Size = UDim2.new(1, 0, 0, 20)
+    StatLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+    StatLabel.Text = "杀手:0 | 警长:0 | 巨人:0 | 平民:0"
+    StatLabel.TextColor3 = Color3.fromRGB(180,180,200)
+    StatLabel.TextSize = 11
+    StatLabel.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", StatLabel).CornerRadius = UDim.new(0, 6)
+    StatLabel.Parent = InfoFrame
+
+    DamageStatLabel = Instance.new("TextLabel")
+    DamageStatLabel.Size = UDim2.new(1, 0, 0, 18)
+    DamageStatLabel.Position = UDim2.new(0, 0, 1, -18)
+    DamageStatLabel.BackgroundTransparency = 1
+    DamageStatLabel.Text = "局内总伤害: 0"
+    DamageStatLabel.TextColor3 = Color3.fromRGB(255, 150, 50)
+    DamageStatLabel.TextSize = 10
+    DamageStatLabel.Font = Enum.Font.GothamBold
+    DamageStatLabel.Parent = InfoFrame
+
+    MainFrame.Parent = ScreenGui
+
+    MinimizeBtn.MouseButton1Click:Connect(function()
+        isMinimized = not isMinimized
+        if isMinimized then
+            MainFrame:TweenSize(UDim2.new(0, 300, 0, 45), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+            ContentScroller.Visible = false
+            MinimizeBtn.Text = "+"
+        else
+            MainFrame:TweenSize(Config.UiSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+            ContentScroller.Visible = true
+            MinimizeBtn.Text = "—"
+        end
+    end)
+
+    CloseBtn.MouseButton1Click:Connect(function()
+        ClearOldInstance()
+        pcall(function() ScreenGui:Destroy() end)
+    end)
+
+    local dragging = false
+    local dragStart, startPos = Vector2.new(), UDim2.new()
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = MainFrame.Position
+        end
+    end)
+    Services.UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    Services.UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+    end)
+
+    task.wait(0.5)
+    ContentScroller.CanvasSize = UDim2.new(0,0,0, ContentList.AbsoluteContentSize.Y)
+    print("【杰森脚本中心】UI创建完成")
+end
+
+-- ================================ 清理旧实例 ================================
+local function ClearOldInstance()
+    if MainLoop then pcall(function() MainLoop:Disconnect() end) MainLoop = nil end
+    for _, conn in pairs(Connections) do pcall(function() if conn.Connected then conn:Disconnect() end end) end
+    table.clear(Connections)
+    for _, player in pairs(Services.Players:GetPlayers()) do
+        pcall(function()
+            local char = player.Character
+            if char and char:FindFirstChild("DetectorHighlight") then char.DetectorHighlight:Destroy() end
+        end)
+    end
+    for _, tagData in pairs(HeadTagCache) do
+        pcall(function() tagData.Gui:Destroy() end)
+    end
+    table.clear(HeadTagCache)
+
+    pcall(function()
+        local checkParents = {PlayerGui, Services.CoreGui, Services.StarterGui}
+        for _, parent in pairs(checkParents) do
+            for _, child in pairs(parent:GetChildren()) do
+                if child.Name == Config.UiName or child.Name == "FovCircleGui" then
+                    pcall(function() child:Destroy() end)
+                end
+            end
+        end
+    end)
+    for _, hl in pairs(HighlightedAPCs) do pcall(function() hl:Destroy() end) end
+    table.clear(HighlightedAPCs)
+    if GiantToolConnection then GiantToolConnection:Disconnect(); GiantToolConnection = nil end
+    if AimbotConnection then AimbotConnection:Disconnect(); AimbotConnection = nil end
+    if RecoilConnection then RecoilConnection:Disconnect(); RecoilConnection = nil end
+    if FovCircleGui then pcall(function() FovCircleGui:Destroy() end) FovCircleGui = nil end
+    if FovCircleFrame then FovCircleFrame = nil end
+end
+ClearOldInstance()
+
+-- ================================ 玩家卡片创建 ================================
+local function CreatePlayerCard(player)
+    if PlayerCardCache[player.UserId] then
+        local cardData = PlayerCardCache[player.UserId]
+        if cardData.Frame and cardData.Frame.Parent == PlayerListContainer then return cardData else PlayerCardCache[player.UserId] = nil end
+    end
+    local orphan = PlayerListContainer:FindFirstChild("Card_" .. player.UserId)
+    if orphan then orphan:Destroy() end
+    local Card = Instance.new("Frame")
+    Card.Name = "Card_" .. player.UserId
+    Card.Size = UDim2.new(1, 0, 0, 42)
+    Card.BackgroundColor3 = Color3.fromRGB(32, 32, 45)
+    Card.BorderSizePixel = 0
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Size = UDim2.new(0.4, -5, 0, 20)
+    NameLabel.Position = UDim2.new(0, 10, 0, 2)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.Text = player.Name
+    NameLabel.TextColor3 = Color3.new(1,1,1)
+    NameLabel.TextSize = 11
+    NameLabel.Font = Enum.Font.Gotham
+    NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    NameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    NameLabel.Parent = Card
+    local RoleLabel = Instance.new("TextLabel")
+    RoleLabel.Size = UDim2.new(0.5, -10, 0, 20)
+    RoleLabel.Position = UDim2.new(0.5, 0, 0, 2)
+    RoleLabel.BackgroundTransparency = 1
+    RoleLabel.Text = "Loading..."
+    RoleLabel.TextColor3 = Config.RoleConfig.Innocent.Color
+    RoleLabel.TextSize = 11
+    RoleLabel.Font = Enum.Font.GothamBold
+    RoleLabel.TextXAlignment = Enum.TextXAlignment.Right
+    RoleLabel.Parent = Card
+    local WeaponLabel = Instance.new("TextLabel")
+    WeaponLabel.Size = UDim2.new(0.9, -20, 0, 14)
+    WeaponLabel.Position = UDim2.new(0, 10, 0, 24)
+    WeaponLabel.BackgroundTransparency = 1
+    WeaponLabel.Text = ""
+    WeaponLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    WeaponLabel.TextSize = 9
+    WeaponLabel.Font = Enum.Font.Gotham
+    WeaponLabel.TextXAlignment = Enum.TextXAlignment.Left
+    WeaponLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    WeaponLabel.Parent = Card
+    local DistanceLabel = Instance.new("TextLabel")
+    DistanceLabel.Size = UDim2.new(0.5, -10, 0, 14)
+    DistanceLabel.Position = UDim2.new(0.5, 0, 0, 24)
+    DistanceLabel.BackgroundTransparency = 1
+    DistanceLabel.Text = ""
+    DistanceLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    DistanceLabel.TextSize = 9
+    DistanceLabel.Font = Enum.Font.Gotham
+    DistanceLabel.TextXAlignment = Enum.TextXAlignment.Right
+    DistanceLabel.Parent = Card
+    Card.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local targetRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if Camera and targetRoot then Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetRoot.Position) end
+        end
+    end)
+    Card.Parent = PlayerListContainer
+    PlayerCardCache[player.UserId] = { Frame = Card, NameLabel = NameLabel, WeaponLabel = WeaponLabel, DistanceLabel = DistanceLabel, RoleLabel = RoleLabel, Player = player }
+    return PlayerCardCache[player.UserId]
+end
+
+-- ================================ 核心更新逻辑 ================================
+local function UpdateMainLogic()
+    local roundStatus = GetRoundStatus()
+    if RoundStatusLabel then
+        if Config.Language == "Chinese" then
+            local phaseText = { Waiting = "等待中", Starting = "即将开始", InProgress = "进行中", Ending = "回合结束" }
+            RoundStatusLabel.Text = string.format("回合状态: %s | 剩余: %ds", phaseText[roundStatus.Phase] or roundStatus.Phase, roundStatus.RemainingTime)
+        else
+            RoundStatusLabel.Text = string.format("Round: %s | Time: %ds", roundStatus.Phase, roundStatus.RemainingTime)
+        end
+    end
+
+    if LastRoundPhase ~= roundStatus.Phase then
+        table.clear(PlayerNativeRoleCache)
+        table.clear(PlayerWeaponCache)
+        table.clear(PlayerCardCache)
+        for _, child in pairs(PlayerListContainer:GetChildren()) do
+            if child:IsA("Frame") and child.Name:find("Card_") then child:Destroy() end
+        end
+        for _, tagData in pairs(HeadTagCache) do
+            pcall(function() tagData.Gui:Destroy() end)
+        end
+        table.clear(HeadTagCache)
+
+        if LastRoundPhase == "InProgress" and roundStatus.Phase ~= "InProgress" then
+            Services.StarterGui:SetCore("SendNotification", { Title = "回合结束", Text = string.format("本局总伤害: %d", TotalDamageThisRound), Duration = 5 })
+            TotalDamageThisRound = 0
+        end
+        LastRoundPhase = roundStatus.Phase
+    end
+
+    local myRole, myWeapon = GetPlayerRoleAndWeapon(LocalPlayer)
+    local myRoleInfo = Config.RoleConfig[myRole]
+    if SelfRoleLabel then
+        local weaponText = myWeapon and " | Weapon: "..myWeapon or ""
+        SelfRoleLabel.Text = (Config.Language == "Chinese") and "我的职业: "..myRoleInfo.Text..weaponText or "My Role: "..myRoleInfo.EnText..weaponText
+        SelfRoleLabel.TextColor3 = myRoleInfo.Color
+    end
+
+    UpdateGiantIdlePenalty()
+    if Config.AimbotEnabled then StartAimbot() else StopAimbot() end
+    if Config.NoRecoilEnabled then StartRecoil() else StopRecoil() end
+
+    UpdateAPCHighlight()
+    UpdateFOVCircle()
+
+    local statCount = { Killer = 0, Sheriff = 0, Giant = 0, Innocent = 0 }
+    local allPlayers = Services.Players:GetPlayers()
+    local visibleCardCount = 0
+    local killerNear = false
+
+    local currentPlayerIds = {}
+
+    for _, player in pairs(allPlayers) do
+        if player == LocalPlayer then continue end
+        local isAlive = IsPlayerAlive(player)
+        if Config.FilterDeadPlayer and not isAlive then
+            local card = PlayerCardCache[player.UserId]
+            if card then card.Frame.Visible = false end
+            local tagData = HeadTagCache[player.UserId]
+            if tagData then tagData.Gui.Enabled = false end
+            continue
+        end
+        local role, weapon, giantHint = GetPlayerRoleAndWeapon(player)
+        local roleInfo = Config.RoleConfig[role]
+        statCount[role] = (statCount[role] or 0) + 1
+
+        if Config.OnlyShowDanger and not roleInfo.IsDanger then
+            local card = PlayerCardCache[player.UserId]
+            if card then card.Frame.Visible = false end
+        end
+
+        if role == "Killer" and Config.WarnWhenKillerNear and isAlive and GetPlayerDistance(player) <= Config.WarnDistance then
+            killerNear = true
+        end
+
+        local shouldHighlight = (Config.HighlightDanger and roleInfo.IsDanger) or (Config.HighlightSheriff and role == "Sheriff") or (Config.HighlightInnocent and role == "Innocent")
+        if shouldHighlight and isAlive then
+            pcall(function()
+                local char = player.Character
+                if char then
+                    local highlight = char:FindFirstChild("DetectorHighlight")
+                    if not highlight then
+                        highlight = Instance.new("Highlight")
+                        highlight.Name = "DetectorHighlight"
+                        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        highlight.FillTransparency = 0.7
+                        highlight.OutlineTransparency = 0
+                        highlight.Parent = char
+                    end
+                    highlight.OutlineColor = roleInfo.Color
+                    highlight.FillColor = roleInfo.Color
+                    highlight.Enabled = true
+                end
+            end)
+        else
+            pcall(function()
+                local char = player.Character
+                if char and char:FindFirstChild("DetectorHighlight") then char.DetectorHighlight:Destroy() end
+            end)
+        end
+
+        if not (Config.OnlyShowDanger and not roleInfo.IsDanger) then
+            local card = CreatePlayerCard(player)
+            card.Frame.Visible = true
+            visibleCardCount += 1
+            local threatText = ""
+            if role == "Killer" and weapon then threatText = IsWeaponInList(weapon, HIGH_THREAT_WEAPONS) and " [高威胁]" or " [普通]" end
+            card.RoleLabel.Text = (Config.Language == "Chinese" and roleInfo.Text or roleInfo.EnText) .. threatText
+            card.RoleLabel.TextColor3 = roleInfo.Color
+            if roleInfo.IsDanger then
+                if not card.Frame:FindFirstChild("DangerStroke") then
+                    local stroke = Instance.new("UIStroke")
+                    stroke.Name = "DangerStroke"; stroke.Thickness = 1.5; stroke.Color = roleInfo.Color; stroke.Parent = card.Frame
+                end
+            else
+                local stroke = card.Frame:FindFirstChild("DangerStroke")
+                if stroke then stroke:Destroy() end
+            end
+            local dist = GetPlayerDistance(player)
+            card.WeaponLabel.Text = weapon and "Weapon: "..weapon or ""
+            if giantHint then card.WeaponLabel.Text = card.WeaponLabel.Text .. " (" .. giantHint .. ")" end
+            card.DistanceLabel.Text = string.format("%.0f m", dist)
+            card.Frame.LayoutOrder = roleInfo.Priority * 1000 + math.floor(dist)
+        end
+
+        local shouldShowTag = (role == "Killer" or role == "Sheriff") and isAlive and weapon
+        if shouldShowTag then
+            local tagData = HeadTagCache[player.UserId]
+            if not tagData then
+                local billboard = Instance.new("BillboardGui")
+                billboard.Name = "HeadWeaponTag"
+                billboard.Size = UDim2.new(0, 200, 0, 30)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                billboard.MaxDistance = 200
+                local label = Instance.new("TextLabel")
+                label.BackgroundTransparency = 1
+                label.Text = ""
+                label.TextColor3 = roleInfo.Color
+                label.TextStrokeTransparency = 0
+                label.TextStrokeColor3 = Color3.new(0,0,0)
+                label.Font = Enum.Font.GothamBold
+                label.TextSize = 14
+                label.Size = UDim2.new(1,0,1,0)
+                label.Parent = billboard
+                tagData = { Gui = billboard, Label = label }
+                HeadTagCache[player.UserId] = tagData
+            else
+                tagData.Gui.Enabled = true
+                tagData.Label.TextColor3 = roleInfo.Color
+            end
+            tagData.Label.Text = weapon
+            local head = player.Character and player.Character:FindFirstChild("Head")
+            if head and tagData.Gui.Parent ~= head then
+                tagData.Gui.Parent = head
+            end
+        else
+            local tagData = HeadTagCache[player.UserId]
+            if tagData then
+                tagData.Gui:Destroy()
+                HeadTagCache[player.UserId] = nil
+            end
+        end
+
+        currentPlayerIds[player.UserId] = true
+    end
+
+    for userId, tagData in pairs(HeadTagCache) do
+        if not currentPlayerIds[userId] then
+            pcall(function() tagData.Gui:Destroy() end)
+            HeadTagCache[userId] = nil
+        end
+    end
+
+    if Config.WarnWhenKillerNear and killerNear and not IsWarned then
+        IsWarned = true
+        Services.StarterGui:SetCore("SendNotification", { Title = "⚠️ 危险预警", Text = "杀手正在靠近你！", Duration = 3 })
+        if MainFrame and MainFrame.UIStroke then
+            Services.TweenService:Create(MainFrame.UIStroke, TweenInfo.new(0.3), {Color = Color3.fromRGB(225,45,45)}):Play()
+            task.delay(1, function() Services.TweenService:Create(MainFrame.UIStroke, TweenInfo.new(0.3), {Color = Color3.fromRGB(40,40,55)}):Play() end)
+        end
+    elseif not killerNear and IsWarned then IsWarned = false end
+    StatLabel.Text = Config.Language == "Chinese"
+        and string.format("杀手:%d | 警长:%d | 巨人:%d | 平民:%d", statCount.Killer, statCount.Sheriff, statCount.Giant, statCount.Innocent)
+        or string.format("Killer:%d | Sheriff:%d | Giant:%d | Innocent:%d", statCount.Killer, statCount.Sheriff, statCount.Giant, statCount.Innocent)
+    if DamageStatLabel then DamageStatLabel.Text = string.format("局内总伤害: %d", TotalDamageThisRound) end
+    EmptyTipLabel.Visible = (visibleCardCount == 0)
+    PlayerListContainer.CanvasSize = UDim2.new(0,0,0, PlayerListContainer.UIListLayout.AbsoluteContentSize.Y)
+    for userId, card in pairs(PlayerCardCache) do
+        if not Services.Players:GetPlayerByUserId(userId) then
+            pcall(function() card.Frame:Destroy() end)
+            PlayerCardCache[userId] = nil; PlayerWeaponCache[userId] = nil; PlayerNativeRoleCache[userId] = nil; PlayerLastHealth[userId] = nil
+        end
+    end
+end
+
+-- ================================ 事件监听与主循环 ================================
+table.insert(Connections, Services.Players.PlayerAdded:Connect(function(player) CreatePlayerCard(player) end))
+table.insert(Connections, Services.Players.PlayerRemoving:Connect(function(player)
+    local card = PlayerCardCache[player.UserId]
+    if card then pcall(function() card.Frame:Destroy() end) end
+    PlayerCardCache[player.UserId] = nil; PlayerWeaponCache[player.UserId] = nil; PlayerNativeRoleCache[player.UserId] = nil; PlayerLastHealth[player.UserId] = nil
+    if HeadTagCache[player.UserId] then
+        pcall(function() HeadTagCache[player.UserId].Gui:Destroy() end)
+        HeadTagCache[player.UserId] = nil
+    end
+end))
+table.insert(Connections, LocalPlayer.CharacterAdded:Connect(function() task.wait(0.5); table.clear(PlayerWeaponCache); table.clear(PlayerNativeRoleCache) end))
+table.insert(Connections, Services.Players.PlayerAdded:Connect(function(player)
+    player.ChildAdded:Connect(function(child)
+        if child.Name == "Backpack" then
+            child.ChildAdded:Connect(function() PlayerWeaponCache[player.UserId] = nil end)
+            child.ChildRemoved:Connect(function() PlayerWeaponCache[player.UserId] = nil end)
+        end
+    end)
+    player.CharacterAdded:Connect(function(char)
+        char.ChildAdded:Connect(function(child)
+            if child:IsA("Tool") then PlayerWeaponCache[player.UserId] = nil end
+        end)
+        char.ChildRemoved:Connect(function(child)
+            if child:IsA("Tool") then PlayerWeaponCache[player.UserId] = nil end
+        end)
+    end)
+end))
+
+local lastUpdate = 0
+MainLoop = Services.RunService.Heartbeat:Connect(function(deltaTime)
+    lastUpdate += deltaTime
+    if lastUpdate < Config.UpdateInterval then return end
+    lastUpdate = 0
+    pcall(UpdateMainLogic)
+end)
+
+CreateMainUI()
+CreateFOVCircleUI()
+
+-- 调试开关：设为 true 跳过卡密验证直接显示主界面
+local SKIP_PASSCODE = false
+if SKIP_PASSCODE then
+    Config.Authenticated = true
+    StartAimbot()
+    StartRecoil()
+    if MainFrame then MainFrame.Visible = true end
+else
+    WaitForPasscode()
+    if MainFrame then MainFrame.Visible = true end
+end
+
+print("【杰森脚本中心】血债版 已成功启动")
+
+end) -- pcall 结束
+
+if not success then
+    warn("脚本执行错误: " .. tostring(err))
+    if Services and Services.StarterGui then
+        Services.StarterGui:SetCore("SendNotification", {
+            Title = "脚本错误",
+            Text = tostring(err),
+            Duration = 10
+        })
+    end
+end
