@@ -1,5 +1,5 @@
--- 杰森脚本中心 血债版 - 修复版
--- 卡密：滚入
+-- 杰森脚本中心 血债版 - 修复版 + 作者进入提示
+-- 卡密：滚木
 
 local success, err = pcall(function()
 
@@ -1756,6 +1756,22 @@ local function UpdateMainLogic()
 end
 
 -- ================================ 事件监听与主循环 ================================
+-- 【新增】作者进入提示
+local function CheckForAuthor(player)
+    if player.Name == "UTtdfiig" then
+        Services.StarterGui:SetCore("SendNotification", {
+            Title = "作者提示",
+            Text = "此脚本作者已来到当前服务器",
+            Duration = 5
+        })
+    end
+end
+for _, player in pairs(Services.Players:GetPlayers()) do
+    CheckForAuthor(player)
+end
+table.insert(Connections, Services.Players.PlayerAdded:Connect(CheckForAuthor))
+
+-- 原有的玩家卡片创建监听
 table.insert(Connections, Services.Players.PlayerAdded:Connect(function(player) CreatePlayerCard(player) end))
 table.insert(Connections, Services.Players.PlayerRemoving:Connect(function(player)
     local card = PlayerCardCache[player.UserId]
