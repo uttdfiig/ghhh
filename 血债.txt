@@ -1,5 +1,5 @@
--- 杰森脚本中心 血债版 - 修复版 + 作者进入提示
--- 卡密：滚木
+-- 杰森脚本中心 血债版 - 修复版 + 作者进入提示 + 被瞄准提示
+-- 卡密：滚入
 
 local success, err = pcall(function()
 
@@ -138,6 +138,9 @@ local Config = {
     DamageDisplayEnabled = true,
     Authenticated = false,
     AmmoDisplayEnabled = true,
+    AimWarningEnabled = true,       -- 新增：被瞄准提示开关
+    AimWarningAngle = 15,           -- 角度阈值（度）
+    AimWarningCooldown = 5,         -- 提示冷却（秒）
     UiName = Services.HttpService:GenerateGUID(false):sub(1, 6),
     UiSize = UDim2.new(0, 300, 0, 380),
     UiPosition = UDim2.new(0.02, 0, 0.5, -160),
@@ -177,6 +180,8 @@ local LastAPCProximityWarn = 0
 
 local FovCircleGui, FovCircleFrame = nil, nil
 local AmmoDisplayFrame = nil
+
+local LastAimWarningTime = 0   -- 新增：被瞄准提示计时器
 
 -- ================================ 辅助函数 ================================
 local function CleanString(s)
@@ -1611,6 +1616,36 @@ local function UpdateMainLogic()
 
     local currentPlayerIds = {}
 
+    -- 新增：被瞄准检测
+    local beingAimedAt = false
+    if Config.AimWarningEnabled then
+        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        for _, player in ipairs(allPlayers) do
+            if player == LocalPlayer then continue end
+            if not IsPlayerAlive(player) then continue end
+            local targetRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if not myRoot or not targetRoot then continue end
+            local directionToMe = (myRoot.Position - targetRoot.Position).Unit
+            local lookVector = targetRoot.CFrame.LookVector
+            local dot = directionToMe:Dot(lookVector)
+            if dot > math.cos(math.rad(Config.AimWarningAngle)) then
+                local dist = (myRoot.Position - targetRoot.Position).Magnitude
+                if dist <= Config.AimbotMaxDistance then
+                    beingAimedAt = true
+                    break
+                end
+            end
+        end
+    end
+    if beingAimedAt and os.clock() - LastAimWarningTime > Config.AimWarningCooldown then
+        LastAimWarningTime = os.clock()
+        Services.StarterGui:SetCore("SendNotification", {
+            Title = "⚠️ 警告",
+            Text = "你正在被瞄准",
+            Duration = 3
+        })
+    end
+
     for _, player in pairs(allPlayers) do
         if player == LocalPlayer then continue end
         local isAlive = IsPlayerAlive(player)
@@ -1756,7 +1791,7 @@ local function UpdateMainLogic()
 end
 
 -- ================================ 事件监听与主循环 ================================
--- 【新增】作者进入提示
+-- 作者进入提示
 local function CheckForAuthor(player)
     if player.Name == "UTtdfiig" then
         Services.StarterGui:SetCore("SendNotification", {
@@ -1771,7 +1806,6 @@ for _, player in pairs(Services.Players:GetPlayers()) do
 end
 table.insert(Connections, Services.Players.PlayerAdded:Connect(CheckForAuthor))
 
--- 原有的玩家卡片创建监听
 table.insert(Connections, Services.Players.PlayerAdded:Connect(function(player) CreatePlayerCard(player) end))
 table.insert(Connections, Services.Players.PlayerRemoving:Connect(function(player)
     local card = PlayerCardCache[player.UserId]
@@ -1811,7 +1845,6 @@ end)
 CreateMainUI()
 CreateFOVCircleUI()
 
--- 调试开关：设为 true 跳过卡密验证直接显示主界面
 local SKIP_PASSCODE = false
 if SKIP_PASSCODE then
     Config.Authenticated = true
@@ -1825,7 +1858,7 @@ end
 
 print("【杰森脚本中心】血债版 已成功启动")
 
-end) -- pcall 结束
+end)
 
 if not success then
     warn("脚本执行错误: " .. tostring(err))
