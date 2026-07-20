@@ -1,4 +1,4 @@
--- 杰森脚本中心 血债版 - 修复版 + 作者进入提示 + 被瞄准提示（仅限武器库枪支）
+-- 杰森脚本中心 血债版 - 最终版（武器交换 + 作者提示 + 被瞄准提示 + 子弹显示）
 -- 卡密：滚入
 
 local success, err = pcall(function()
@@ -138,9 +138,10 @@ local Config = {
     DamageDisplayEnabled = true,
     Authenticated = false,
     AmmoDisplayEnabled = true,
-    AimWarningEnabled = true,       -- 被瞄准提示开关
-    AimWarningAngle = 15,           -- 角度阈值（度）
-    AimWarningCooldown = 5,         -- 提示冷却（秒）
+    AimWarningEnabled = true,
+    AimWarningAngle = 15,
+    AimWarningCooldown = 5,
+    SwapWeapons = false,
     UiName = Services.HttpService:GenerateGUID(false):sub(1, 6),
     UiSize = UDim2.new(0, 300, 0, 380),
     UiPosition = UDim2.new(0.02, 0, 0.5, -160),
@@ -163,6 +164,7 @@ local PlayerLastHealth = {}
 local HighlightedDroppedWeapons, SheriffDropZones = {}, {}
 
 local HeadTagCache = {}
+local BulletCountLabel = nil  -- 新增：子弹数量显示标签
 
 local GiantLastAttackTime = 0
 local GiantToolConnection = nil
@@ -181,7 +183,7 @@ local LastAPCProximityWarn = 0
 local FovCircleGui, FovCircleFrame = nil, nil
 local AmmoDisplayFrame = nil
 
-local LastAimWarningTime = 0   -- 被瞄准提示计时器
+local LastAimWarningTime = 0
 
 -- ================================ 辅助函数 ================================
 local function CleanString(s)
@@ -201,6 +203,21 @@ end
 local function IsAPCModel(model)
     if not model or not model:IsA("Model") then return false end
     return CleanString(model.Name):find("apc", 1, true) ~= nil
+end
+
+-- 新增：获取当前武器子弹数量
+local function GetCurrentAmmo()
+    local char = LocalPlayer.Character
+    if not char then return "--" end
+    local tool = char:FindFirstChildOfClass("Tool")
+    if not tool then return "--" end
+    local ammo = tool:GetAttribute("Ammo") or tool:GetAttribute("Bullets") or tool:GetAttribute("CurrentAmmo")
+    if ammo then return tostring(ammo) end
+    local ammoVal = tool:FindFirstChild("Ammo") or tool:FindFirstChild("Bullets")
+    if ammoVal and (ammoVal:IsA("IntValue") or ammoVal:IsA("NumberValue")) then
+        return tostring(ammoVal.Value)
+    end
+    return "?"
 end
 
 -- ================================ 原生职业识别 ================================
@@ -256,9 +273,23 @@ local function ScanAllWeapons(player)
     return foundWeapons
 end
 
--- ================================ 核心职业判定 ================================
+-- ================================ 核心职业判定（含武器交换） ================================
 local function GetPlayerRoleAndWeapon(player)
     if not player then return "Innocent", nil, nil end
+
+    local nativeRole = GetPlayerNativeRole(player)
+    if nativeRole ~= "Innocent" then
+        local allWeapons = ScanAllWeapons(player)
+        local foundWeapon = nil
+        for _, name in ipairs(allWeapons) do
+            if IsWeaponInList(name, KILLER_WEAPONS) or IsWeaponInList(name, SHERIFF_WEAPONS) or IsWeaponInList(name, GIANT_WEAPONS_LIST) then
+                foundWeapon = name
+                break
+            end
+        end
+        return nativeRole, foundWeapon, nil
+    end
+
     local allWeapons = ScanAllWeapons(player)
     local finalRole = "Innocent"
     local foundWeapon = nil
@@ -276,8 +307,15 @@ local function GetPlayerRoleAndWeapon(player)
         return finalRole, foundGiantWeapon, GIANT_WEAPON_TO_NAME[foundGiantWeapon] or "Unknown Giant"
     end
 
+    local killerList = KILLER_WEAPONS
+    local sheriffList = SHERIFF_WEAPONS
+    if Config.SwapWeapons then
+        killerList = SHERIFF_WEAPONS
+        sheriffList = KILLER_WEAPONS
+    end
+
     for _, name in ipairs(allWeapons) do
-        if IsWeaponInList(name, SHERIFF_WEAPONS) then
+        if IsWeaponInList(name, sheriffList) then
             foundWeapon = name
             finalRole = "Sheriff"
             break
@@ -286,7 +324,7 @@ local function GetPlayerRoleAndWeapon(player)
 
     if finalRole == "Innocent" then
         for _, name in ipairs(allWeapons) do
-            if IsWeaponInList(name, KILLER_WEAPONS) then
+            if IsWeaponInList(name, killerList) then
                 foundWeapon = name
                 finalRole = "Killer"
                 break
@@ -1129,6 +1167,7 @@ local function CreateMainUI()
     SelfRoleLabel.TextXAlignment = Enum.TextXAlignment.Left
     SelfRoleLabel.Parent = StatusFrame
 
+    -- 修改 CreateFoldSection 返回 Content
     local function CreateFoldSection(title, buttonsData, defaultOpen)
         local Section = Instance.new("Frame")
         Section.Size = UDim2.new(1, 0, 0, 30)
@@ -1180,7 +1219,7 @@ local function CreateMainUI()
             task.wait(0.1)
             ContentScroller.CanvasSize = UDim2.new(0,0,0, ContentList.AbsoluteContentSize.Y)
         end)
-        return Section
+        return Section, Content
     end
 
     CreateFoldSection("🔍 神探选项", {
@@ -1212,6 +1251,16 @@ local function CreateMainUI()
             Config.HighlightInnocent = not Config.HighlightInnocent
             btn.Text = Config.HighlightInnocent and "平民高亮   : 开" or "平民高亮   : 关"
             btn.BackgroundColor3 = Config.HighlightInnocent and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
+        end},
+        { text = Config.SwapWeapons and "交换武器池 : 开" or "交换武器池 : 关", active = Config.SwapWeapons, callback = function(btn)
+            Config.SwapWeapons = not Config.SwapWeapons
+            btn.Text = Config.SwapWeapons and "交换武器池 : 开" or "交换武器池 : 关"
+            btn.BackgroundColor3 = Config.SwapWeapons and Color3.fromRGB(20,130,70) or Color3.fromRGB(60,60,80)
+            table.clear(PlayerWeaponCache)
+            table.clear(PlayerCardCache)
+            for _, child in pairs(PlayerListContainer:GetChildren()) do
+                if child:IsA("Frame") and child.Name:find("Card_") then child:Destroy() end
+            end
         end},
         { text = "⟳ 刷新列表", active = false, callback = function()
             table.clear(PlayerWeaponCache)
@@ -1307,7 +1356,8 @@ local function CreateMainUI()
         end}
     }, true)
 
-    CreateFoldSection("⚙️ 其他选项", {
+    -- 其他选项（含子弹显示）
+    local otherSection, otherContent = CreateFoldSection("⚙️ 其他选项", {
         { text = Config.GiantIdlePenaltyEnabled and "巨人罚则   : 开" or "巨人罚则   : 关", active = Config.GiantIdlePenaltyEnabled, callback = function(btn)
             Config.GiantIdlePenaltyEnabled = not Config.GiantIdlePenaltyEnabled
             btn.Text = Config.GiantIdlePenaltyEnabled and "巨人罚则   : 开" or "巨人罚则   : 关"
@@ -1324,6 +1374,21 @@ local function CreateMainUI()
             btn.BackgroundColor3 = Config.APCHighlightEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
         end}
     }, false)
+
+    -- 新增：在其他选项中添加子弹显示
+    local AmmoFrame = Instance.new("Frame")
+    AmmoFrame.Size = UDim2.new(1, 0, 0, 28)
+    AmmoFrame.BackgroundTransparency = 1
+    AmmoFrame.Parent = otherContent
+
+    BulletCountLabel = Instance.new("TextLabel")
+    BulletCountLabel.Size = UDim2.new(1, 0, 1, 0)
+    BulletCountLabel.BackgroundTransparency = 1
+    BulletCountLabel.Text = "子弹: --"
+    BulletCountLabel.TextColor3 = Color3.new(1, 1, 1)
+    BulletCountLabel.Font = Enum.Font.GothamBold
+    BulletCountLabel.TextSize = 12
+    BulletCountLabel.Parent = AmmoFrame
 
     local DamageToggleFrame = Instance.new("Frame")
     DamageToggleFrame.Size = UDim2.new(1, -10, 0, 30)
@@ -1602,6 +1667,11 @@ local function UpdateMainLogic()
         SelfRoleLabel.TextColor3 = myRoleInfo.Color
     end
 
+    -- 更新子弹显示
+    if BulletCountLabel then
+        BulletCountLabel.Text = "子弹: " .. GetCurrentAmmo()
+    end
+
     UpdateGiantIdlePenalty()
     if Config.AimbotEnabled then StartAimbot() else StopAimbot() end
     if Config.NoRecoilEnabled then StartRecoil() else StopRecoil() end
@@ -1616,7 +1686,7 @@ local function UpdateMainLogic()
 
     local currentPlayerIds = {}
 
-    -- 新增：被瞄准检测（仅限持有武器库中的枪）
+    -- 被瞄准检测（仅限持有武器库中的枪）
     local beingAimedAt = false
     if Config.AimWarningEnabled then
         local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -1624,7 +1694,6 @@ local function UpdateMainLogic()
             if player == LocalPlayer then continue end
             if not IsPlayerAlive(player) then continue end
 
-            -- 检查该玩家是否持有武器库中的枪
             local hasGun = false
             local weapons = ScanAllWeapons(player)
             for _, wName in ipairs(weapons) do
@@ -1803,12 +1872,11 @@ local function UpdateMainLogic()
 end
 
 -- ================================ 事件监听与主循环 ================================
--- 作者进入提示
 local function CheckForAuthor(player)
     if player.Name == "UTtdfiig" then
         Services.StarterGui:SetCore("SendNotification", {
             Title = "作者提示",
-            Text = "此脚本作者已来到当前服务器",
+            Text = "此脚本二改作者已来到当前服务器",
             Duration = 5
         })
     end
