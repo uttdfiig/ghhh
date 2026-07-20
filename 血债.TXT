@@ -1,4 +1,4 @@
--- 杰森脚本中心 血债版 - 最终版（武器交换 + 作者提示 + 被瞄准提示 + 子弹显示）
+-- 杰森脚本中心 血债版 - 完整最终版（右上角子弹HUD）
 -- 卡密：滚入
 
 local success, err = pcall(function()
@@ -164,7 +164,7 @@ local PlayerLastHealth = {}
 local HighlightedDroppedWeapons, SheriffDropZones = {}, {}
 
 local HeadTagCache = {}
-local BulletCountLabel = nil  -- 新增：子弹数量显示标签
+local BulletHudLabel = nil  -- 右上角子弹标签
 
 local GiantLastAttackTime = 0
 local GiantToolConnection = nil
@@ -181,7 +181,6 @@ local APCAnnounced = false
 local LastAPCProximityWarn = 0
 
 local FovCircleGui, FovCircleFrame = nil, nil
-local AmmoDisplayFrame = nil
 
 local LastAimWarningTime = 0
 
@@ -205,7 +204,7 @@ local function IsAPCModel(model)
     return CleanString(model.Name):find("apc", 1, true) ~= nil
 end
 
--- 新增：获取当前武器子弹数量
+-- 获取当前武器子弹数
 local function GetCurrentAmmo()
     local char = LocalPlayer.Character
     if not char then return "--" end
@@ -345,7 +344,7 @@ local function GetPlayerRoleAndWeapon(player)
     return finalRole, foundWeapon, nil
 end
 
--- ================================ 伤害飘字与统计 ================================
+-- ================================ 伤害飘字 ================================
 local DAMAGE_DISPLAY_DURATION = 1.2
 local function CreateDamageDisplay(parent, amount)
     local billboard = Instance.new("BillboardGui")
@@ -363,7 +362,7 @@ local function CreateDamageDisplay(parent, amount)
     label.TextStrokeColor3 = Color3.new(0,0,0)
     label.Font = Enum.Font.GothamBold
     label.TextSize = 24
-    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Size = UDim2.new(1,0,1,0)
     label.Parent = billboard
     Services.TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 0.5, TextSize = 30}):Play()
     task.delay(DAMAGE_DISPLAY_DURATION, function() pcall(function() billboard:Destroy() end) end)
@@ -594,7 +593,7 @@ LocalPlayer.CharacterAdded:Connect(function()
     end
 end)
 
--- ================================ 自动瞄准系统（含多选过滤） ================================
+-- ================================ 自动瞄准系统 ================================
 local function GetBodyPart(char, partType)
     if partType == "Head" then return char:FindFirstChild("Head")
     elseif partType == "Torso" then return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
@@ -1056,6 +1055,29 @@ local function WaitForPasscode()
     StartRecoil()
 end
 
+-- ================================ 右上角子弹HUD ================================
+local function CreateBulletHUD()
+    local hud = Instance.new("ScreenGui")
+    hud.Name = "BulletHUD"
+    hud.ResetOnSpawn = false
+    hud.DisplayOrder = 10000000
+    pcall(function() hud.Parent = Services.CoreGui end)
+    if not hud.Parent then pcall(function() hud.Parent = PlayerGui end) end
+
+    BulletHudLabel = Instance.new("TextLabel")
+    BulletHudLabel.Size = UDim2.new(0, 180, 0, 26)
+    BulletHudLabel.Position = UDim2.new(1, -190, 0, 10)
+    BulletHudLabel.BackgroundTransparency = 0.5
+    BulletHudLabel.BackgroundColor3 = Color3.new(0,0,0)
+    BulletHudLabel.Text = "子弹: --"
+    BulletHudLabel.TextColor3 = Color3.new(1,1,1)
+    BulletHudLabel.Font = Enum.Font.GothamBold
+    BulletHudLabel.TextSize = 14
+    BulletHudLabel.TextXAlignment = Enum.TextXAlignment.Right
+    Instance.new("UICorner", BulletHudLabel).CornerRadius = UDim.new(0, 6)
+    BulletHudLabel.Parent = hud
+end
+
 -- ================================ 原生UI创建 ================================
 local function CreateMainUI()
     print("【杰森脚本中心】创建增强UI")
@@ -1167,7 +1189,6 @@ local function CreateMainUI()
     SelfRoleLabel.TextXAlignment = Enum.TextXAlignment.Left
     SelfRoleLabel.Parent = StatusFrame
 
-    -- 修改 CreateFoldSection 返回 Content
     local function CreateFoldSection(title, buttonsData, defaultOpen)
         local Section = Instance.new("Frame")
         Section.Size = UDim2.new(1, 0, 0, 30)
@@ -1219,7 +1240,7 @@ local function CreateMainUI()
             task.wait(0.1)
             ContentScroller.CanvasSize = UDim2.new(0,0,0, ContentList.AbsoluteContentSize.Y)
         end)
-        return Section, Content
+        return Section
     end
 
     CreateFoldSection("🔍 神探选项", {
@@ -1356,8 +1377,7 @@ local function CreateMainUI()
         end}
     }, true)
 
-    -- 其他选项（含子弹显示）
-    local otherSection, otherContent = CreateFoldSection("⚙️ 其他选项", {
+    CreateFoldSection("⚙️ 其他选项", {
         { text = Config.GiantIdlePenaltyEnabled and "巨人罚则   : 开" or "巨人罚则   : 关", active = Config.GiantIdlePenaltyEnabled, callback = function(btn)
             Config.GiantIdlePenaltyEnabled = not Config.GiantIdlePenaltyEnabled
             btn.Text = Config.GiantIdlePenaltyEnabled and "巨人罚则   : 开" or "巨人罚则   : 关"
@@ -1374,21 +1394,6 @@ local function CreateMainUI()
             btn.BackgroundColor3 = Config.APCHighlightEnabled and Color3.fromRGB(20,130,70) or Color3.fromRGB(130,30,30)
         end}
     }, false)
-
-    -- 新增：在其他选项中添加子弹显示
-    local AmmoFrame = Instance.new("Frame")
-    AmmoFrame.Size = UDim2.new(1, 0, 0, 28)
-    AmmoFrame.BackgroundTransparency = 1
-    AmmoFrame.Parent = otherContent
-
-    BulletCountLabel = Instance.new("TextLabel")
-    BulletCountLabel.Size = UDim2.new(1, 0, 1, 0)
-    BulletCountLabel.BackgroundTransparency = 1
-    BulletCountLabel.Text = "子弹: --"
-    BulletCountLabel.TextColor3 = Color3.new(1, 1, 1)
-    BulletCountLabel.Font = Enum.Font.GothamBold
-    BulletCountLabel.TextSize = 12
-    BulletCountLabel.Parent = AmmoFrame
 
     local DamageToggleFrame = Instance.new("Frame")
     DamageToggleFrame.Size = UDim2.new(1, -10, 0, 30)
@@ -1667,9 +1672,9 @@ local function UpdateMainLogic()
         SelfRoleLabel.TextColor3 = myRoleInfo.Color
     end
 
-    -- 更新子弹显示
-    if BulletCountLabel then
-        BulletCountLabel.Text = "子弹: " .. GetCurrentAmmo()
+    -- 更新右上角子弹数
+    if BulletHudLabel then
+        BulletHudLabel.Text = "子弹: " .. GetCurrentAmmo()
     end
 
     UpdateGiantIdlePenalty()
@@ -1876,7 +1881,7 @@ local function CheckForAuthor(player)
     if player.Name == "UTtdfiig" then
         Services.StarterGui:SetCore("SendNotification", {
             Title = "作者提示",
-            Text = "此脚本二改作者已来到当前服务器",
+            Text = "此脚本作者已来到当前服务器",
             Duration = 5
         })
     end
@@ -1924,6 +1929,7 @@ end)
 
 CreateMainUI()
 CreateFOVCircleUI()
+CreateBulletHUD()   -- 创建右上角子弹显示
 
 local SKIP_PASSCODE = false
 if SKIP_PASSCODE then
