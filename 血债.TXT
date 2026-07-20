@@ -1,4 +1,4 @@
--- 杰森脚本中心 血债版 - 完整最终版（右上角子弹HUD）
+-- 杰森脚本中心 血债版 - 最终版（子弹容量模拟 + 优化伤害飘字）
 -- 卡密：滚入
 
 local success, err = pcall(function()
@@ -99,6 +99,56 @@ local HIGH_THREAT_WEAPONS = {
     "'Memorial'","TEKE-9","ZZ-90","ZT-33"
 }
 
+-- ================================ 武器子弹容量表（基于用户数据） ================================
+local WEAPON_CAPACITY = {
+    ["ZOZ-106"] = 10, ["Gild Rosen-Obrez"] = 5, ["SKORPION"] = 15,
+    ["Dual Micro KZis"] = 30, ["ZZ-71"] = 35, ["Party Cannon JTS225-Obrez"] = 5,
+    ["Gild K1911"] = 7, ["ZT-33 (Golden)"] = 7, ["Plastic JS-22"] = 9,
+    ["Fleet-K51"] = 6, ["JAVELIN-OBREZS"] = 10, ["K1911"] = 7,
+    ["Skeleton Rosen-Obrez"] = 5, ["H&W-K7"] = 7, ["Cute JS2-Derringy"] = 2,
+    ["'Memories'"] = 10, ["TEKE-9"] = 15, ["Jolibri"] = 7,
+    ["Steel Rosen-Obrez"] = 5, ["410BONDS-Derringy"] = 2, ["LUT-E 'PIP'"] = 15,
+    ["ZZ-90"] = 15, ["Cr7s"] = 30, ["Gild JTS225-Obrez"] = 5,
+    ["Gild Gisil-Pistole"] = 9, ["Rosen-Obrez"] = 5, ["Unioned PPm-41"] = 35,
+    ["PRIDE SKORPION"] = 15, ["OTz-02"] = 15, ["Kensington"] = 7,
+    ["JS-22"] = 9, ["MAK-10"] = 15, ["JSK-44"] = 6,
+    ["ZOZ-106SCOPED"] = 4, ["1895-Rosev"] = 7, ["K1911 Threaded"] = 7,
+    ["PPm-41"] = 35, ["RUZKH-12"] = 5, ["HWISSH-KP9"] = 5,
+    ["Lenitrovyak-23"] = 1, ["Kamatov"] = 8, ["JTS225-Obrez"] = 5,
+    ["JS1-Competitor"] = 1, ["HEARDBALLA"] = 8, ["Mandols-5"] = 5,
+    ["Bezzhumny"] = 8, ["Door'bler"] = 1, ["Mooser"] = 10,
+    ["JS2-Derringy"] = 2, ["JS1-CYCLOPS"] = 1, ["Blaze Sawn-off"] = 2,
+    ["'Memorial'"] = 8, ["Whizz"] = 4, ["Sawn-off"] = 2,
+    ["JS-22 Sealed"] = 9, ["Steel Mares Leg"] = 7, ["Pol357"] = 4,
+    ["'Desperation'"] = 9, ["ChromeSlide Turquoise RR-LCP"] = 7, ["Camo RR-LCPS"] = 7,
+    ["RR-LightCompactPistols"] = 7, ["Daniqui-Obrez"] = 7, ["JS"] = 1,
+    ["Mares Leg"] = 7, ["Gisil-Pistole"] = 9, ["RR-LightCompactPistol"] = 7,
+    ["Cute RR-LCPS"] = 7, ["Sawed-THUMPA"] = 1, ["Gild JS"] = 1,
+    ["ZT-33"] = 7, ["FT100"] = 1, ["J21a Meretta"] = 9,
+    ["AGM22"] = 10, ["Gild Sawn-off"] = 2, ["Bouquet"] = 10,
+    ["RR-MarkII"] = 10, ["Steel 1895-Rosey"] = 7, ["JS-2 Derringy"] = 2,
+    ["RR-LightCombatPistol"] = 7, ["Hammer n Bullet"] = 1, ["KR7S"] = 30,
+    ["HW-M5K"] = 30, ["IZVEKH-BISEN"] = 64, ["APZ"] = 10,
+    ["Micro KZI"] = 30, ["Z26M Stungun"] = 1, ["Mikro KZI"] = 15,
+    ["Chromeslide"] = 10, ["Mak-10"] = 15, ["Lut-e Krus"] = 15,
+    ["Mersa-12"] = 8, ["BuxxBerg590"] = 7, ["Buxxberg-Compact"] = 7,
+    ["ZOZ-194"] = 10, ["Zj23m"] = 4, ["Merretta 486 Palubu"] = 8,
+    ["Thumpa"] = 1, ["IZVEKH-ViteX"] = 30, ["ANK74SU"] = 30,
+    ["A86M2L-SW"] = 50, ["AK74M"] = 30, ["AN-J91"] = 30,
+    ["BF AAL"] = 20, ["SAG-Storm"] = 35, ["IZVEKH-412"] = 6,
+    ["Steel R&E Snubby"] = 6, ["ZKZ-Obrez"] = 10, ["Beagle-50"] = 7,
+    ["R&E Snubby"] = 10, ["KriegsHerr-9"] = 15, ["H&W-MPi5K"] = 15,
+    ["GG-17"] = 17, ["'Paradise'"] = 7, ["Beagle-44"] = 7,
+    ["SWAG-7"] = 5, ["JS-5A-Obrez"] = 5, ["J9a1 Meretta"] = 45,
+    ["Gild GG-17"] = 17, ["Gild J9a1 M"] = 15, ["Gild ZKZ-Obrez"] = 10,
+    ["Buxxberg-COMPACT"] = 3, ["SHOT-7"] = 5, ["Unioned ZKZ-Obrez"] = 10,
+    ["PRIDE H-226 SHIELD"] = 15, ["Dual GG-17s"] = 17, ["SAKURA ZKZ-Obrez"] = 10,
+    ["R&E M10"] = 6, ["Dual Merettas"] = 15, ["GG-26"] = 10,
+    ["HWISSH-226 SHIELD"] = 15, ["ANKO46"] = 15, ["Sawed-Auto180"] = 180,
+    ["Warlord-9"] = 9, ["J9-Meretta"] = 15, ["RR-Snubby"] = 6,
+    ["Beagle"] = 7, ["HW-226"] = 15
+}
+
 -- ================================ 配置项 ================================
 local Config = {
     UpdateInterval = 0.3,
@@ -164,7 +214,11 @@ local PlayerLastHealth = {}
 local HighlightedDroppedWeapons, SheriffDropZones = {}, {}
 
 local HeadTagCache = {}
-local BulletHudLabel = nil  -- 右上角子弹标签
+local BulletHudLabel = nil
+
+-- 子弹模拟
+local CurrentAmmoRemaining = nil
+local CurrentWeaponName = nil
 
 local GiantLastAttackTime = 0
 local GiantToolConnection = nil
@@ -204,19 +258,49 @@ local function IsAPCModel(model)
     return CleanString(model.Name):find("apc", 1, true) ~= nil
 end
 
--- 获取当前武器子弹数
-local function GetCurrentAmmo()
-    local char = LocalPlayer.Character
-    if not char then return "--" end
-    local tool = char:FindFirstChildOfClass("Tool")
-    if not tool then return "--" end
-    local ammo = tool:GetAttribute("Ammo") or tool:GetAttribute("Bullets") or tool:GetAttribute("CurrentAmmo")
-    if ammo then return tostring(ammo) end
-    local ammoVal = tool:FindFirstChild("Ammo") or tool:FindFirstChild("Bullets")
-    if ammoVal and (ammoVal:IsA("IntValue") or ammoVal:IsA("NumberValue")) then
-        return tostring(ammoVal.Value)
+-- 子弹HUD更新
+local function UpdateAmmoDisplay()
+    if BulletHudLabel then
+        if CurrentAmmoRemaining ~= nil then
+            BulletHudLabel.Text = "子弹: " .. CurrentAmmoRemaining
+        else
+            BulletHudLabel.Text = "子弹: ?"
+        end
     end
-    return "?"
+end
+
+local function ResetAmmoForWeapon(weaponName)
+    if not weaponName then
+        CurrentAmmoRemaining = nil
+        CurrentWeaponName = nil
+        return
+    end
+    local capacity = WEAPON_CAPACITY[weaponName]
+    if capacity then
+        CurrentAmmoRemaining = capacity
+    else
+        -- 尝试模糊匹配 (e.g. "Unioned PPM-41" vs "Unioned PPm-41")
+        for k, v in pairs(WEAPON_CAPACITY) do
+            if CleanString(k) == CleanString(weaponName) then
+                capacity = v
+                break
+            end
+        end
+        if capacity then
+            CurrentAmmoRemaining = capacity
+        else
+            CurrentAmmoRemaining = nil
+        end
+    end
+    CurrentWeaponName = weaponName
+    UpdateAmmoDisplay()
+end
+
+local function FireOneShot()
+    if CurrentAmmoRemaining and CurrentAmmoRemaining > 0 then
+        CurrentAmmoRemaining = CurrentAmmoRemaining - 1
+        UpdateAmmoDisplay()
+    end
 end
 
 -- ================================ 原生职业识别 ================================
@@ -344,28 +428,54 @@ local function GetPlayerRoleAndWeapon(player)
     return finalRole, foundWeapon, nil
 end
 
--- ================================ 伤害飘字 ================================
+-- ================================ 优化版伤害飘字 ================================
+local DAMAGE_POOL = {}
+local MAX_DAMAGE_LABELS = 10
 local DAMAGE_DISPLAY_DURATION = 1.2
+
 local function CreateDamageDisplay(parent, amount)
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "DamageBillboard"
-    billboard.Size = UDim2.new(0, 100, 0, 40)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 100
+    if not Config.DamageDisplayEnabled then return end
+
+    local billboard = table.remove(DAMAGE_POOL)
+    if not billboard then
+        billboard = Instance.new("BillboardGui")
+        billboard.Name = "DamageBillboard"
+        billboard.Size = UDim2.new(0, 100, 0, 40)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.MaxDistance = 100
+
+        local label = Instance.new("TextLabel")
+        label.BackgroundTransparency = 1
+        label.TextStrokeTransparency = 0
+        label.TextStrokeColor3 = Color3.new(0,0,0)
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 24
+        label.Size = UDim2.new(1,0,1,0)
+        label.Parent = billboard
+    end
+
     billboard.Parent = parent
-    local label = Instance.new("TextLabel")
-    label.BackgroundTransparency = 1
+    local label = billboard:FindFirstChildOfClass("TextLabel")
     label.Text = "-" .. tostring(amount)
     label.TextColor3 = Color3.fromRGB(255, 60, 60)
-    label.TextStrokeTransparency = 0
-    label.TextStrokeColor3 = Color3.new(0,0,0)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 24
-    label.Size = UDim2.new(1,0,1,0)
-    label.Parent = billboard
+    label.TextTransparency = 0
+
     Services.TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 0.5, TextSize = 30}):Play()
-    task.delay(DAMAGE_DISPLAY_DURATION, function() pcall(function() billboard:Destroy() end) end)
+
+    task.delay(DAMAGE_DISPLAY_DURATION, function()
+        pcall(function()
+            billboard.Parent = nil
+            label.TextTransparency = 1
+            label.TextSize = 24
+            if #DAMAGE_POOL < MAX_DAMAGE_LABELS then
+                table.insert(DAMAGE_POOL, billboard)
+            else
+                billboard:Destroy()
+            end
+        end)
+    end)
+
     if amount > 0 and amount < 500 then
         TotalDamageThisRound = TotalDamageThisRound + amount
     end
@@ -791,12 +901,21 @@ local function SetupGlobalToolListener()
                 local extraConn = tool.Activated:Connect(FireExtraBullets)
                 table.insert(Connections, extraConn)
             end
+            -- 子弹消耗监听
+            if not tool:GetAttribute("AmmoTracked") then
+                tool:SetAttribute("AmmoTracked", true)
+                local ammoConn = tool.Activated:Connect(FireOneShot)
+                table.insert(Connections, ammoConn)
+            end
         end
     end
 end
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
     SetupGlobalToolListener()
+    CurrentAmmoRemaining = nil
+    CurrentWeaponName = nil
+    UpdateAmmoDisplay()
 end)
 SetupGlobalToolListener()
 
@@ -1069,7 +1188,7 @@ local function CreateBulletHUD()
     BulletHudLabel.Position = UDim2.new(1, -190, 0, 10)
     BulletHudLabel.BackgroundTransparency = 0.5
     BulletHudLabel.BackgroundColor3 = Color3.new(0,0,0)
-    BulletHudLabel.Text = "子弹: --"
+    BulletHudLabel.Text = "子弹: ?"
     BulletHudLabel.TextColor3 = Color3.new(1,1,1)
     BulletHudLabel.Font = Enum.Font.GothamBold
     BulletHudLabel.TextSize = 14
@@ -1672,9 +1791,18 @@ local function UpdateMainLogic()
         SelfRoleLabel.TextColor3 = myRoleInfo.Color
     end
 
-    -- 更新右上角子弹数
-    if BulletHudLabel then
-        BulletHudLabel.Text = "子弹: " .. GetCurrentAmmo()
+    -- 武器切换检测，重置子弹
+    local char = LocalPlayer.Character
+    if char then
+        local tool = char:FindFirstChildOfClass("Tool")
+        local toolName = tool and tool.Name
+        if toolName ~= CurrentWeaponName then
+            ResetAmmoForWeapon(toolName)
+        end
+    else
+        CurrentAmmoRemaining = nil
+        CurrentWeaponName = nil
+        UpdateAmmoDisplay()
     end
 
     UpdateGiantIdlePenalty()
@@ -1929,7 +2057,7 @@ end)
 
 CreateMainUI()
 CreateFOVCircleUI()
-CreateBulletHUD()   -- 创建右上角子弹显示
+CreateBulletHUD()
 
 local SKIP_PASSCODE = false
 if SKIP_PASSCODE then
